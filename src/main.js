@@ -326,8 +326,8 @@ function initCurtainPhysics() {
     side: el.classList.contains('curtain-left') ? -1 : 1,
     w: 0,
     h: 0,
-    cols: 30,
-    rows: 38,
+    cols: 58,
+    rows: 64,
     points: [],
     grabbed: null,
     collisionEnergy: 0
@@ -561,11 +561,12 @@ function initCurtainPhysics() {
         const u = (x + 0.5) / cols;
         const v = (y + 0.5) / rows;
         const wrinkle = Math.sin(u * Math.PI * 13 + (p00.x - p00.bx) * 0.045 + time * 0.35 * side);
+        const microSheen = Math.sin(u * Math.PI * 31 + v * 5.5 - time * 0.22) * 0.08;
         const verticalTension = Math.hypot(p01.x - p00.x, p01.y - p00.y) / (h / rows);
-        const silk = 0.46 + wrinkle * 0.28 + Math.max(0, verticalTension - 1) * 0.30 + curtain.collisionEnergy * 0.18;
-        const r = Math.round(44 + silk * 112);
-        const g = Math.round(15 + silk * 58);
-        const b = Math.round(14 + silk * 46);
+        const silk = 0.48 + wrinkle * 0.16 + microSheen + Math.max(0, verticalTension - 1) * 0.18 + curtain.collisionEnergy * 0.10;
+        const r = Math.round(38 + silk * 102);
+        const g = Math.round(13 + silk * 50);
+        const b = Math.round(13 + silk * 40);
         ctx.fillStyle = `rgb(${r},${g},${b})`;
         ctx.beginPath();
         ctx.moveTo(p00.x, p00.y);
@@ -575,43 +576,45 @@ function initCurtainPhysics() {
         ctx.closePath();
         ctx.fill();
 
-        if (x % 3 === 0) {
-          ctx.globalAlpha = 0.11 + Math.max(0, wrinkle) * 0.10;
-          ctx.strokeStyle = '#ffd1a0';
-          ctx.lineWidth = 0.5;
-          ctx.beginPath();
-          ctx.moveTo((p00.x + p01.x) * 0.5, (p00.y + p01.y) * 0.5);
-          ctx.lineTo((p10.x + p11.x) * 0.5, (p10.y + p11.y) * 0.5);
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-        }
       }
     }
 
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.13 + curtain.collisionEnergy * 0.16;
-    ctx.strokeStyle = '#f3c398';
-    ctx.lineWidth = 0.55;
-    for (let x = 0; x <= cols; x += 2) {
+    ctx.globalAlpha = 0.024 + curtain.collisionEnergy * 0.040;
+    ctx.strokeStyle = '#ffd6ad';
+    ctx.lineWidth = 0.28;
+    for (let x = 0; x <= cols; x += 7) {
       ctx.beginPath();
       for (let y = 0; y <= rows; y++) {
         const p = point(curtain, x, y);
-        if (y === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
+        const shimmer = Math.sin(y * 0.42 + time * 0.9 + x) * 1.6;
+        if (y === 0) ctx.moveTo(p.x + shimmer, p.y);
+        else ctx.lineTo(p.x + shimmer, p.y);
       }
       ctx.stroke();
     }
-    ctx.globalAlpha = 0.075;
-    for (let y = 2; y <= rows; y += 2) {
+    ctx.globalAlpha = 0.004;
+    ctx.strokeStyle = '#ffe0bd';
+    ctx.lineWidth = 0.20;
+    for (let y = 8; y <= rows; y += 16) {
       ctx.beginPath();
       for (let x = 0; x <= cols; x++) {
         const p = point(curtain, x, y);
-        if (x === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
+        const shimmer = Math.sin(x * 0.5 + time * 0.7 + y) * 0.9;
+        if (x === 0) ctx.moveTo(p.x, p.y + shimmer);
+        else ctx.lineTo(p.x, p.y + shimmer);
       }
       ctx.stroke();
     }
+    ctx.globalAlpha = 0.30 + curtain.collisionEnergy * 0.10;
+    const satin = ctx.createLinearGradient(side < 0 ? 0 : w, 0, side < 0 ? w : 0, h);
+    satin.addColorStop(0, 'rgba(255, 211, 168, 0)');
+    satin.addColorStop(0.38, 'rgba(255, 218, 180, .40)');
+    satin.addColorStop(0.52, 'rgba(255, 255, 238, .18)');
+    satin.addColorStop(0.72, 'rgba(255, 211, 168, 0)');
+    ctx.fillStyle = satin;
+    ctx.fillRect(0, 0, w, h);
     ctx.restore();
 
     const bottom = ctx.createLinearGradient(0, h - 82, 0, h);
