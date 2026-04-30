@@ -319,19 +319,52 @@ function initGrain() {
 
 function initCurtainPhysics() {
   const stage = document.querySelector('.scrolly-stage');
-  const curtains = [...document.querySelectorAll('.curtain')].map((el) => ({
-    el,
-    canvas: el.querySelector('.curtain-canvas'),
-    ctx: el.querySelector('.curtain-canvas').getContext('2d'),
-    side: el.classList.contains('curtain-left') ? -1 : 1,
-    w: 0,
-    h: 0,
-    cols: 58,
-    rows: 64,
-    points: [],
-    grabbed: null,
-    collisionEnergy: 0
-  }));
+  const curtains = [...document.querySelectorAll('.curtain')].map((el) => {
+    const canvas = el.querySelector('.curtain-canvas');
+    const side = el.classList.contains('curtain-left') ? -1 : 1;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 20);
+    camera.position.z = 6;
+
+    const cols = 54;
+    const rows = 68;
+    const geometry = new THREE.PlaneGeometry(2, 2, cols, rows);
+    const material = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#4b1714'),
+      roughness: 0.42,
+      metalness: 0.0,
+      reflectivity: 0.62,
+      sheen: 0.85,
+      sheenColor: new THREE.Color('#ffcaa1'),
+      sheenRoughness: 0.34,
+      clearcoat: 0.24,
+      clearcoatRoughness: 0.36,
+      side: THREE.DoubleSide,
+      vertexColors: true
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    const ambient = new THREE.AmbientLight(0x5a241e, 1.65);
+    const key = new THREE.DirectionalLight(0xffd0a4, 3.4);
+    key.position.set(side * -1.8, 1.2, 4.8);
+    const rim = new THREE.DirectionalLight(0xfff2dd, 1.15);
+    rim.position.set(side * 2.5, -0.2, 3.5);
+    scene.add(ambient, key, rim);
+
+    return {
+      el, canvas, renderer, scene, camera, geometry, material, mesh, side,
+      cols, rows, w: 0, h: 0, clothW: 2, clothH: 2,
+      points: [], grabbed: null, collisionEnergy: 0,
+      color: new THREE.Color(), temp: new THREE.Vector3()
+    };
+  });
 
   const state = {
     target: 0,
@@ -352,31 +385,34 @@ function initCurtainPhysics() {
 
   window.__setCurtainOpen = (open) => {
     const next = clamp(open);
-    state.shock += Math.min(0.12, Math.abs(next - state.lastTarget) * 0.24);
+    state.shock += Math.min(0.07, Math.abs(next - state.lastTarget) * 0.14);
     state.target = next;
     state.lastTarget = next;
   };
 
-  function makePoint(x, y, pinned = false) {
-    return { x, y, ox: x, oy: y, bx: x, by: y, pinned, shade: 0 };
-  }
-
-  function buildMesh(curtain) {
-    curtain.points = [];
-    const { cols, rows, w, h, side } = curtain;
-    for (let y = 0; y <= rows; y++) {
-      for (let x = 0; x <= cols; x++) {
-        const u = x / cols;
-        const v = y / rows;
-        const fold = Math.sin(u * Math.PI * 7.5) * (18 + 10 * (1 - v));
-        const sag = Math.sin(u * Math.PI) * v * v * 22;
-        curtain.points.push(makePoint(u * w + fold * side, v * h + sag, y === 0));
-      }
-    }
+  function makePoint(x, y, z, pinned = false) {
+    return { x, y, z, ox: x, oy: y, oz: z, bx: x, by: y, bz: z, pinned };
   }
 
   function point(curtain, x, y) {
     return curtain.points[y * (curtain.cols + 1) + x];
+  }
+
+  function buildMesh(curtain) {
+    curtain.points = [];
+    const { cols, rows, clothW, clothH, side } = curtain;
+    for (let y = 0; y <= rows; y++) {
+      for (let x = 0; x <= cols; x++) {
+        const u = x / cols;
+        const v = y / rows;
+        const fold = Math.sin(u * Math.PI * 8.2) * 0.055 * (1 - v * 0.30);
+        const sag = Math.sin(u * Math.PI) * v * v * 0.055;
+        const px = (u - 0.5) * clothW + fold * side;
+        const py = (0.5 - v) * clothH - sag;
+        const pz = Math.cos(u * Math.PI * 8.2) * 0.055 * (1 - v * 0.24);
+        curtain.points.push(makePoint(px, py, pz, y === 0));
+      }
+    }
   }
 
   function resize() {
@@ -385,11 +421,16 @@ function initCurtainPhysics() {
       const rect = curtain.el.getBoundingClientRect();
       curtain.w = Math.max(1, Math.round(rect.width));
       curtain.h = Math.max(1, Math.round(rect.height));
-      curtain.canvas.width = Math.round(curtain.w * dpr);
-      curtain.canvas.height = Math.round(curtain.h * dpr);
-      curtain.canvas.style.width = `${curtain.w}px`;
-      curtain.canvas.style.height = `${curtain.h}px`;
-      curtain.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      curtain.clothW = 2.35;
+      curtain.clothH = 2.35 * (curtain.h / curtain.w);
+      curtain.renderer.setPixelRatio(dpr);
+      curtain.renderer.setSize(curtain.w, curtain.h, false);
+      curtain.camera.left = -curtain.clothW / 2;
+      curtain.camera.right = curtain.clothW / 2;
+      curtain.camera.top = curtain.clothH / 2;
+      curtain.camera.bottom = -curtain.clothH / 2;
+      curtain.camera.updateProjectionMatrix();
+      curtain.mesh.scale.set(curtain.clothW / 2, curtain.clothH / 2, 1);
       buildMesh(curtain);
     });
   }
@@ -402,7 +443,19 @@ function initCurtainPhysics() {
     state.pointerVX = state.pointerX - state.prevPointerX;
     state.pointerVY = state.pointerY - state.prevPointerY;
     state.pointerActive = true;
-    state.shock += Math.min(0.08, Math.hypot(state.pointerVX, state.pointerVY) * 0.0015);
+    state.shock += Math.min(0.045, Math.hypot(state.pointerVX, state.pointerVY) * 0.0008);
+  }
+
+  function pointerToCloth(curtain) {
+    const rect = curtain.canvas.getBoundingClientRect();
+    const u = (state.pointerX - rect.left) / rect.width;
+    const v = (state.pointerY - rect.top) / rect.height;
+    return {
+      inside: state.pointerActive && u > -0.08 && u < 1.08 && v > -0.08 && v < 1.08,
+      x: (u - 0.5) * curtain.clothW,
+      y: (0.5 - v) * curtain.clothH,
+      u, v
+    };
   }
 
   window.addEventListener('pointermove', updatePointer, { passive: true });
@@ -416,29 +469,27 @@ function initCurtainPhysics() {
     let best = null;
     let bestDistance = Infinity;
     curtains.forEach((curtain) => {
-      const rect = curtain.canvas.getBoundingClientRect();
-      const lx = event.clientX - rect.left;
-      const ly = event.clientY - rect.top;
+      const local = pointerToCloth(curtain);
       curtain.grabbed = null;
       curtain.points.forEach((p) => {
         if (p.pinned) return;
-        const d = Math.hypot(p.x - lx, p.y - ly);
+        const d = Math.hypot(p.x - local.x, p.y - local.y) + Math.abs(p.z) * 0.24;
         if (d < bestDistance) {
           bestDistance = d;
-          best = { curtain, point: p, lx, ly };
+          best = { curtain, point: p, local };
         }
       });
     });
-    if (best && bestDistance < 180) {
+    if (best && bestDistance < 0.24) {
       best.curtain.grabbed = best.point;
       state.pull = 1;
-      state.shock += 0.22;
+      state.shock += 0.12;
     }
     try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
   });
   stage.addEventListener('pointerup', (event) => {
     state.dragging = false;
-    state.shock += 0.18;
+    state.shock += 0.10;
     state.pull = 0;
     curtains.forEach((curtain) => { curtain.grabbed = null; });
     stage.classList.remove('is-pulling');
@@ -451,67 +502,68 @@ function initCurtainPhysics() {
     stage.classList.remove('is-pulling');
   });
 
-  function satisfy(a, b, rest, stiffness = 0.62) {
+  function satisfy(a, b, rest, stiffness = 0.48) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
-    const d = Math.hypot(dx, dy) || 0.0001;
+    const dz = b.z - a.z;
+    const d = Math.hypot(dx, dy, dz) || 0.0001;
     const diff = (d - rest) / d * stiffness;
     const ox = dx * diff * 0.5;
     const oy = dy * diff * 0.5;
-    if (!a.pinned) { a.x += ox; a.y += oy; }
-    if (!b.pinned) { b.x -= ox; b.y -= oy; }
+    const oz = dz * diff * 0.5;
+    if (!a.pinned) { a.x += ox; a.y += oy; a.z += oz; }
+    if (!b.pinned) { b.x -= ox; b.y -= oy; b.z -= oz; }
   }
 
   function simulateCurtain(curtain, time) {
-    const { cols, rows, w, h, side } = curtain;
-    const rect = curtain.canvas.getBoundingClientRect();
-    const px = state.pointerX - rect.left;
-    const py = state.pointerY - rect.top;
-    const pointerInside = state.pointerActive && px > -120 && px < w + 120 && py > -120 && py < h + 120;
-    const speed = Math.hypot(state.pointerVX, state.pointerVY);
-    const collisionRadius = state.dragging ? 150 : 105;
-    const wind = Math.sin(time * 0.9 + side) * 0.16 + Math.sin(time * 1.7) * 0.07 + state.velocity * 8 + state.shock * 3.2;
-    const xRest = w / cols;
-    const yRest = h / rows;
-    curtain.collisionEnergy *= 0.92;
+    const { cols, rows, clothW, clothH, side } = curtain;
+    const local = pointerToCloth(curtain);
+    const speed = Math.min(42, Math.hypot(state.pointerVX, state.pointerVY));
+    const collisionRadius = state.dragging ? 0.24 : 0.17;
+    const xRest = clothW / cols;
+    const yRest = clothH / rows;
+    const wind = Math.sin(time * 0.75 + side) * 0.006 + Math.sin(time * 1.35) * 0.003 + state.velocity * 0.16 + state.shock * 0.035;
+    curtain.collisionEnergy *= 0.90;
 
     for (let y = 0; y <= rows; y++) {
       for (let x = 0; x <= cols; x++) {
         const p = point(curtain, x, y);
         const u = x / cols;
         const v = y / rows;
-        const fold = Math.sin(u * Math.PI * (7.5 + state.open * 2.3) + time * 0.42 * side) * (18 + 12 * (1 - v));
-        const gathered = side * state.open * w * (0.10 + 0.08 * Math.sin(u * Math.PI)) * (1 - v * 0.26);
-        p.bx = u * w + fold * side + gathered;
-        p.by = v * h + Math.sin(u * Math.PI) * v * v * (20 + state.shock * 40);
+        const foldPhase = u * Math.PI * (8.2 + state.open * 1.1) + time * 0.18 * side;
+        const foldAmp = 0.060 * (1 - v * 0.28);
+        const gathered = side * state.open * clothW * (0.055 + 0.04 * Math.sin(u * Math.PI)) * (1 - v * 0.18);
+        p.bx = (u - 0.5) * clothW + Math.sin(foldPhase) * foldAmp * side + gathered;
+        p.by = (0.5 - v) * clothH - Math.sin(u * Math.PI) * v * v * (0.045 + state.shock * 0.04);
+        p.bz = Math.cos(foldPhase) * (0.085 + state.open * 0.018) * (1 - v * 0.15);
 
         if (p.pinned) {
-          p.x += (p.bx - p.x) * 0.36;
-          p.y += (p.by - p.y) * 0.36;
-          p.ox = p.x;
-          p.oy = p.y;
+          p.x += (p.bx - p.x) * 0.30;
+          p.y += (p.by - p.y) * 0.30;
+          p.z += (p.bz - p.z) * 0.30;
+          p.ox = p.x; p.oy = p.y; p.oz = p.z;
           continue;
         }
 
-        const vx = (p.x - p.ox) * 0.968;
-        const vy = (p.y - p.oy) * 0.968;
-        p.ox = p.x;
-        p.oy = p.y;
-        p.x += vx + (p.bx - p.x) * (0.010 + v * 0.006) + side * wind * v * (0.8 + Math.sin(u * Math.PI) * 0.8);
-        p.y += vy + 0.34 + Math.sin(time * 1.3 + u * 5) * 0.05;
+        const vx = (p.x - p.ox) * 0.955;
+        const vy = (p.y - p.oy) * 0.955;
+        const vz = (p.z - p.oz) * 0.950;
+        p.ox = p.x; p.oy = p.y; p.oz = p.z;
+        p.x += vx + (p.bx - p.x) * (0.018 + v * 0.004) + side * wind * v;
+        p.y += vy + (p.by - p.y) * (0.012 + v * 0.004) - 0.0012;
+        p.z += vz + (p.bz - p.z) * 0.022 + wind * (0.9 + v * 0.5);
 
-        if (pointerInside) {
-          const dx = p.x - px;
-          const dy = p.y - py;
+        if (local.inside) {
+          const dx = p.x - local.x;
+          const dy = p.y - local.y;
           const d = Math.hypot(dx, dy) || 0.0001;
           if (d < collisionRadius) {
             const hit = (collisionRadius - d) / collisionRadius;
             const nx = dx / d;
             const ny = dy / d;
-            p.x += nx * hit * (34 + speed * 0.42);
-            p.y += ny * hit * (28 + speed * 0.30);
-            p.x += state.pointerVX * hit * 0.35;
-            p.y += state.pointerVY * hit * 0.28;
+            p.x += nx * hit * (0.014 + speed * 0.00028);
+            p.y += ny * hit * (0.010 + speed * 0.00020);
+            p.z += hit * (0.055 + speed * 0.00065);
             curtain.collisionEnergy = Math.max(curtain.collisionEnergy, hit);
           }
         }
@@ -519,152 +571,80 @@ function initCurtainPhysics() {
     }
 
     if (curtain.grabbed && state.dragging) {
-      curtain.grabbed.x += (px - curtain.grabbed.x) * 0.72;
-      curtain.grabbed.y += (py - curtain.grabbed.y) * 0.72;
-      curtain.grabbed.ox = curtain.grabbed.x - state.pointerVX * 0.34;
-      curtain.grabbed.oy = curtain.grabbed.y - state.pointerVY * 0.34;
+      const p = curtain.grabbed;
+      p.x += (local.x - p.x) * 0.30;
+      p.y += (local.y - p.y) * 0.30;
+      p.z += (0.145 - p.z) * 0.16;
+      p.ox = p.x - (state.pointerVX / Math.max(1, curtain.w)) * curtain.clothW * 0.10;
+      p.oy = p.y + (state.pointerVY / Math.max(1, curtain.h)) * curtain.clothH * 0.07;
       curtain.collisionEnergy = 1;
     }
 
-    for (let iteration = 0; iteration < 4; iteration++) {
+    for (let iteration = 0; iteration < 5; iteration++) {
       for (let y = 0; y <= rows; y++) {
         for (let x = 0; x <= cols; x++) {
-          if (x < cols) satisfy(point(curtain, x, y), point(curtain, x + 1, y), xRest, 0.72);
-          if (y < rows) satisfy(point(curtain, x, y), point(curtain, x, y + 1), yRest, 0.66);
-          if (x < cols && y < rows) satisfy(point(curtain, x, y), point(curtain, x + 1, y + 1), Math.hypot(xRest, yRest), 0.12);
+          if (x < cols) satisfy(point(curtain, x, y), point(curtain, x + 1, y), xRest, 0.58);
+          if (y < rows) satisfy(point(curtain, x, y), point(curtain, x, y + 1), yRest, 0.56);
+          if (x < cols && y < rows) satisfy(point(curtain, x, y), point(curtain, x + 1, y + 1), Math.hypot(xRest, yRest), 0.08);
         }
       }
     }
-
-    curtain.points.forEach((p) => {
-      p.x = clamp(p.x, -w * 0.22, w * 1.22);
-      p.y = clamp(p.y, -20, h + 70);
-    });
   }
 
-  function drawCurtain(curtain, time) {
-    const { ctx, cols, rows, w, h, side } = curtain;
-    ctx.clearRect(0, 0, w, h);
-    const base = ctx.createLinearGradient(0, 0, w, h);
-    base.addColorStop(0, '#74372c');
-    base.addColorStop(0.44, '#381512');
-    base.addColorStop(1, '#070202');
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, w, h);
+  function renderCurtain(curtain, time) {
+    const { geometry, cols, rows, clothW, clothH, side } = curtain;
+    const position = geometry.attributes.position;
+    const color = geometry.attributes.color || new THREE.BufferAttribute(new Float32Array(position.count * 3), 3);
+    if (!geometry.attributes.color) geometry.setAttribute('color', color);
 
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const p00 = point(curtain, x, y);
-        const p10 = point(curtain, x + 1, y);
-        const p11 = point(curtain, x + 1, y + 1);
-        const p01 = point(curtain, x, y + 1);
-        const u = (x + 0.5) / cols;
-        const v = (y + 0.5) / rows;
-        const wrinkle = Math.sin(u * Math.PI * 13 + (p00.x - p00.bx) * 0.045 + time * 0.35 * side);
-        const microSheen = Math.sin(u * Math.PI * 31 + v * 5.5 - time * 0.22) * 0.08;
-        const verticalTension = Math.hypot(p01.x - p00.x, p01.y - p00.y) / (h / rows);
-        const silk = 0.48 + wrinkle * 0.16 + microSheen + Math.max(0, verticalTension - 1) * 0.18 + curtain.collisionEnergy * 0.10;
-        const r = Math.round(38 + silk * 102);
-        const g = Math.round(13 + silk * 50);
-        const b = Math.round(13 + silk * 40);
-        ctx.fillStyle = `rgb(${r},${g},${b})`;
-        ctx.beginPath();
-        ctx.moveTo(p00.x, p00.y);
-        ctx.lineTo(p10.x, p10.y);
-        ctx.lineTo(p11.x, p11.y);
-        ctx.lineTo(p01.x, p01.y);
-        ctx.closePath();
-        ctx.fill();
-
-      }
-    }
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.024 + curtain.collisionEnergy * 0.040;
-    ctx.strokeStyle = '#ffd6ad';
-    ctx.lineWidth = 0.28;
-    for (let x = 0; x <= cols; x += 7) {
-      ctx.beginPath();
-      for (let y = 0; y <= rows; y++) {
-        const p = point(curtain, x, y);
-        const shimmer = Math.sin(y * 0.42 + time * 0.9 + x) * 1.6;
-        if (y === 0) ctx.moveTo(p.x + shimmer, p.y);
-        else ctx.lineTo(p.x + shimmer, p.y);
-      }
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 0.004;
-    ctx.strokeStyle = '#ffe0bd';
-    ctx.lineWidth = 0.20;
-    for (let y = 8; y <= rows; y += 16) {
-      ctx.beginPath();
+    for (let y = 0; y <= rows; y++) {
       for (let x = 0; x <= cols; x++) {
+        const i = y * (cols + 1) + x;
         const p = point(curtain, x, y);
-        const shimmer = Math.sin(x * 0.5 + time * 0.7 + y) * 0.9;
-        if (x === 0) ctx.moveTo(p.x, p.y + shimmer);
-        else ctx.lineTo(p.x, p.y + shimmer);
+        const u = x / cols;
+        const v = y / rows;
+        position.setXYZ(i, p.x / (clothW / 2), p.y / (clothH / 2), p.z);
+
+        const fold = Math.sin(u * Math.PI * 10.5 + p.z * 10 + time * 0.22 * side);
+        const satinBand = Math.pow(Math.max(0, Math.sin(u * Math.PI * 3.4 + p.z * 8 + 0.6)), 2.4);
+        const verticalGlow = Math.pow(Math.max(0, Math.cos((u - 0.45 * side) * Math.PI * 2.2 + time * 0.10)), 5.0);
+        const tension = Math.min(1, Math.abs(p.z - p.bz) * 4.5 + curtain.collisionEnergy * 0.12);
+        const shade = 0.34 + fold * 0.08 + satinBand * 0.22 + verticalGlow * 0.18 + tension * 0.10 - v * 0.10;
+        curtain.color.setRGB(0.18 + shade * 0.34, 0.045 + shade * 0.13, 0.040 + shade * 0.10);
+        color.setXYZ(i, curtain.color.r, curtain.color.g, curtain.color.b);
       }
-      ctx.stroke();
     }
-    ctx.globalAlpha = 0.30 + curtain.collisionEnergy * 0.10;
-    const satin = ctx.createLinearGradient(side < 0 ? 0 : w, 0, side < 0 ? w : 0, h);
-    satin.addColorStop(0, 'rgba(255, 211, 168, 0)');
-    satin.addColorStop(0.38, 'rgba(255, 218, 180, .40)');
-    satin.addColorStop(0.52, 'rgba(255, 255, 238, .18)');
-    satin.addColorStop(0.72, 'rgba(255, 211, 168, 0)');
-    ctx.fillStyle = satin;
-    ctx.fillRect(0, 0, w, h);
-    ctx.restore();
-
-    const bottom = ctx.createLinearGradient(0, h - 82, 0, h);
-    bottom.addColorStop(0, 'rgba(255,218,178,.02)');
-    bottom.addColorStop(0.45, 'rgba(20,7,5,.22)');
-    bottom.addColorStop(1, 'rgba(0,0,0,.58)');
-    ctx.fillStyle = bottom;
-    ctx.beginPath();
-    ctx.moveTo(0, h - 55);
-    for (let x = 0; x <= cols; x++) {
-      const p = point(curtain, x, rows);
-      ctx.lineTo(p.x, p.y - 4);
-    }
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fill();
-
-    const vignette = ctx.createLinearGradient(side < 0 ? w : 0, 0, side < 0 ? 0 : w, 0);
-    vignette.addColorStop(0, 'rgba(0,0,0,.42)');
-    vignette.addColorStop(0.34, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,.52)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, w, h);
+    position.needsUpdate = true;
+    color.needsUpdate = true;
+    geometry.computeVertexNormals();
+    curtain.material.roughness = 0.40 + Math.sin(time * 0.5) * 0.025 - curtain.collisionEnergy * 0.04;
+    curtain.material.sheenRoughness = 0.30 + curtain.collisionEnergy * 0.06;
+    curtain.renderer.render(curtain.scene, curtain.camera);
   }
 
   function animate(ms) {
     const time = ms * 0.001;
-    const stiffness = 0.055;
-    const damping = 0.82;
-    const force = (state.target - state.open) * stiffness;
-    state.velocity = (state.velocity + force) * damping;
+    const force = (state.target - state.open) * 0.055;
+    state.velocity = (state.velocity + force) * 0.82;
     state.open = clamp(state.open + state.velocity);
     state.shock *= 0.92;
     state.pointerVX *= 0.82;
     state.pointerVY *= 0.82;
-    state.pull *= 0.92;
+    state.pull *= 0.90;
 
-    const idleDrift = Math.sin(time * 0.72) * 0.012 + Math.sin(time * 1.41) * 0.005;
     const energy = Math.max(...curtains.map((curtain) => curtain.collisionEnergy), state.shock);
-    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.08);
+    const idleDrift = Math.sin(time * 0.72) * 0.006 + Math.sin(time * 1.41) * 0.003;
+    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.035);
     stage.style.setProperty('--curtain-open', physicalOpen.toFixed(4));
-    stage.style.setProperty('--curtain-sway', (idleDrift * 18 + state.velocity * 120 + energy * 12).toFixed(3));
+    stage.style.setProperty('--curtain-sway', (idleDrift * 8 + state.velocity * 55 + energy * 3.5).toFixed(3));
     stage.style.setProperty('--curtain-pull', Math.max(state.pull, energy).toFixed(4));
 
     curtains.forEach((curtain) => {
       simulateCurtain(curtain, time);
-      drawCurtain(curtain, time);
+      renderCurtain(curtain, time);
     });
     window.__curtainPhysicsDebug = {
+      mode: 'three-cloth',
       open: physicalOpen,
       energy,
       leftEnergy: curtains[0]?.collisionEnergy || 0,
