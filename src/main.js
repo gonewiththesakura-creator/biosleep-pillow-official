@@ -84,12 +84,12 @@ app.innerHTML = `
       <div class="story-copy story-0 active" data-step="0">
         <p class="eyebrow">BIO-BASED SLEEP SYSTEM</p>
         <h1><span>先拉开夜色，</span><span>再进入睡眠。</span></h1>
-        <p>滚动开启整段体验。即使不滚动，窗帘也会轻微飘动；移动鼠标或按住拖拽，会像真实丝绸一样被扰动。</p>
+        <p>滚动开启整段体验。窗帘本身是一张实时布料网格：鼠标靠近会发生局部碰撞，按住拖拽会抓住布面节点并拉扯回弹。</p>
       </div>
       <div class="story-copy story-1" data-step="1">
         <p class="eyebrow">CURTAIN / PHYSICS</p>
         <h2>布料被拉开，<br/>但不是机械移动。</h2>
-        <p>滚动只是意图，实际运动由弹簧、惯性、阻尼和鼠标扰动决定。</p>
+        <p>滚动只是开合意图；布面由固定顶点、弹簧约束、重力、碰撞半径和拖拽抓点共同计算。</p>
       </div>
       <div class="story-copy story-2" data-step="2">
         <p class="eyebrow">OBJECT IN MOTION</p>
@@ -322,9 +322,15 @@ function initCurtainPhysics() {
   const curtains = [...document.querySelectorAll('.curtain')].map((el) => ({
     el,
     canvas: el.querySelector('.curtain-canvas'),
+    ctx: el.querySelector('.curtain-canvas').getContext('2d'),
     side: el.classList.contains('curtain-left') ? -1 : 1,
     w: 0,
-    h: 0
+    h: 0,
+    cols: 30,
+    rows: 38,
+    points: [],
+    grabbed: null,
+    collisionEnergy: 0
   }));
 
   const state = {
@@ -333,56 +339,45 @@ function initCurtainPhysics() {
     velocity: 0,
     shock: 0,
     lastTarget: 0,
-    pointerX: 0,
-    pointerY: 0,
-    pull: 0,
-    pullVelocity: 0,
+    pointerX: window.innerWidth * 0.5,
+    pointerY: window.innerHeight * 0.5,
+    prevPointerX: window.innerWidth * 0.5,
+    prevPointerY: window.innerHeight * 0.5,
+    pointerVX: 0,
+    pointerVY: 0,
+    pointerActive: false,
     dragging: false,
-    dragStartX: 0,
-    dragX: 0
+    pull: 0
   };
 
   window.__setCurtainOpen = (open) => {
     const next = clamp(open);
-    state.shock += Math.min(0.06, Math.abs(next - state.lastTarget) * 0.16);
+    state.shock += Math.min(0.12, Math.abs(next - state.lastTarget) * 0.24);
     state.target = next;
     state.lastTarget = next;
   };
 
-  window.addEventListener('pointermove', (event) => {
-    state.pointerX = (event.clientX / window.innerWidth - 0.5) * 2;
-    state.pointerY = (event.clientY / window.innerHeight - 0.5) * 2;
-    state.shock += 0.004 + Math.abs(event.movementX || 0) * 0.0009 + Math.abs(event.movementY || 0) * 0.00035;
-    if (state.dragging) {
-      state.dragX = event.clientX;
-      const dragDelta = (state.dragX - state.dragStartX) / Math.max(1, window.innerWidth);
-      state.pull = clamp(Math.abs(dragDelta) * 2.4, 0, 1.4);
-      state.pullVelocity += dragDelta * 0.012;
-      state.shock += Math.min(0.045, Math.abs(event.movementX || 0) * 0.0024);
+  function makePoint(x, y, pinned = false) {
+    return { x, y, ox: x, oy: y, bx: x, by: y, pinned, shade: 0 };
+  }
+
+  function buildMesh(curtain) {
+    curtain.points = [];
+    const { cols, rows, w, h, side } = curtain;
+    for (let y = 0; y <= rows; y++) {
+      for (let x = 0; x <= cols; x++) {
+        const u = x / cols;
+        const v = y / rows;
+        const fold = Math.sin(u * Math.PI * 7.5) * (18 + 10 * (1 - v));
+        const sag = Math.sin(u * Math.PI) * v * v * 22;
+        curtain.points.push(makePoint(u * w + fold * side, v * h + sag, y === 0));
+      }
     }
-  }, { passive: true });
+  }
 
-  stage.addEventListener('pointerdown', (event) => {
-    state.dragging = true;
-    state.dragStartX = event.clientX;
-    state.dragX = event.clientX;
-    state.shock += 0.16;
-    stage.classList.add('is-pulling');
-    try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
-  });
-
-  stage.addEventListener('pointerup', (event) => {
-    state.dragging = false;
-    state.pullVelocity += (state.dragX - state.dragStartX) / Math.max(1, window.innerWidth) * 0.08;
-    state.shock += Math.min(0.24, Math.abs(state.pullVelocity) * 1.8 + 0.08);
-    stage.classList.remove('is-pulling');
-    try { stage.releasePointerCapture?.(event.pointerId); } catch (_) {}
-  });
-
-  stage.addEventListener('pointercancel', () => {
-    state.dragging = false;
-    stage.classList.remove('is-pulling');
-  });
+  function point(curtain, x, y) {
+    return curtain.points[y * (curtain.cols + 1) + x];
+  }
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -394,146 +389,286 @@ function initCurtainPhysics() {
       curtain.canvas.height = Math.round(curtain.h * dpr);
       curtain.canvas.style.width = `${curtain.w}px`;
       curtain.canvas.style.height = `${curtain.h}px`;
-      const ctx = curtain.canvas.getContext('2d');
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      curtain.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildMesh(curtain);
+    });
+  }
+
+  function updatePointer(event) {
+    state.prevPointerX = state.pointerX;
+    state.prevPointerY = state.pointerY;
+    state.pointerX = event.clientX;
+    state.pointerY = event.clientY;
+    state.pointerVX = state.pointerX - state.prevPointerX;
+    state.pointerVY = state.pointerY - state.prevPointerY;
+    state.pointerActive = true;
+    state.shock += Math.min(0.08, Math.hypot(state.pointerVX, state.pointerVY) * 0.0015);
+  }
+
+  window.addEventListener('pointermove', updatePointer, { passive: true });
+  stage.addEventListener('pointerleave', () => {
+    if (!state.dragging) state.pointerActive = false;
+  });
+  stage.addEventListener('pointerdown', (event) => {
+    updatePointer(event);
+    state.dragging = true;
+    stage.classList.add('is-pulling');
+    let best = null;
+    let bestDistance = Infinity;
+    curtains.forEach((curtain) => {
+      const rect = curtain.canvas.getBoundingClientRect();
+      const lx = event.clientX - rect.left;
+      const ly = event.clientY - rect.top;
+      curtain.grabbed = null;
+      curtain.points.forEach((p) => {
+        if (p.pinned) return;
+        const d = Math.hypot(p.x - lx, p.y - ly);
+        if (d < bestDistance) {
+          bestDistance = d;
+          best = { curtain, point: p, lx, ly };
+        }
+      });
+    });
+    if (best && bestDistance < 180) {
+      best.curtain.grabbed = best.point;
+      state.pull = 1;
+      state.shock += 0.22;
+    }
+    try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
+  });
+  stage.addEventListener('pointerup', (event) => {
+    state.dragging = false;
+    state.shock += 0.18;
+    state.pull = 0;
+    curtains.forEach((curtain) => { curtain.grabbed = null; });
+    stage.classList.remove('is-pulling');
+    try { stage.releasePointerCapture?.(event.pointerId); } catch (_) {}
+  });
+  stage.addEventListener('pointercancel', () => {
+    state.dragging = false;
+    state.pull = 0;
+    curtains.forEach((curtain) => { curtain.grabbed = null; });
+    stage.classList.remove('is-pulling');
+  });
+
+  function satisfy(a, b, rest, stiffness = 0.62) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.hypot(dx, dy) || 0.0001;
+    const diff = (d - rest) / d * stiffness;
+    const ox = dx * diff * 0.5;
+    const oy = dy * diff * 0.5;
+    if (!a.pinned) { a.x += ox; a.y += oy; }
+    if (!b.pinned) { b.x -= ox; b.y -= oy; }
+  }
+
+  function simulateCurtain(curtain, time) {
+    const { cols, rows, w, h, side } = curtain;
+    const rect = curtain.canvas.getBoundingClientRect();
+    const px = state.pointerX - rect.left;
+    const py = state.pointerY - rect.top;
+    const pointerInside = state.pointerActive && px > -120 && px < w + 120 && py > -120 && py < h + 120;
+    const speed = Math.hypot(state.pointerVX, state.pointerVY);
+    const collisionRadius = state.dragging ? 150 : 105;
+    const wind = Math.sin(time * 0.9 + side) * 0.16 + Math.sin(time * 1.7) * 0.07 + state.velocity * 8 + state.shock * 3.2;
+    const xRest = w / cols;
+    const yRest = h / rows;
+    curtain.collisionEnergy *= 0.92;
+
+    for (let y = 0; y <= rows; y++) {
+      for (let x = 0; x <= cols; x++) {
+        const p = point(curtain, x, y);
+        const u = x / cols;
+        const v = y / rows;
+        const fold = Math.sin(u * Math.PI * (7.5 + state.open * 2.3) + time * 0.42 * side) * (18 + 12 * (1 - v));
+        const gathered = side * state.open * w * (0.10 + 0.08 * Math.sin(u * Math.PI)) * (1 - v * 0.26);
+        p.bx = u * w + fold * side + gathered;
+        p.by = v * h + Math.sin(u * Math.PI) * v * v * (20 + state.shock * 40);
+
+        if (p.pinned) {
+          p.x += (p.bx - p.x) * 0.36;
+          p.y += (p.by - p.y) * 0.36;
+          p.ox = p.x;
+          p.oy = p.y;
+          continue;
+        }
+
+        const vx = (p.x - p.ox) * 0.968;
+        const vy = (p.y - p.oy) * 0.968;
+        p.ox = p.x;
+        p.oy = p.y;
+        p.x += vx + (p.bx - p.x) * (0.010 + v * 0.006) + side * wind * v * (0.8 + Math.sin(u * Math.PI) * 0.8);
+        p.y += vy + 0.34 + Math.sin(time * 1.3 + u * 5) * 0.05;
+
+        if (pointerInside) {
+          const dx = p.x - px;
+          const dy = p.y - py;
+          const d = Math.hypot(dx, dy) || 0.0001;
+          if (d < collisionRadius) {
+            const hit = (collisionRadius - d) / collisionRadius;
+            const nx = dx / d;
+            const ny = dy / d;
+            p.x += nx * hit * (34 + speed * 0.42);
+            p.y += ny * hit * (28 + speed * 0.30);
+            p.x += state.pointerVX * hit * 0.35;
+            p.y += state.pointerVY * hit * 0.28;
+            curtain.collisionEnergy = Math.max(curtain.collisionEnergy, hit);
+          }
+        }
+      }
+    }
+
+    if (curtain.grabbed && state.dragging) {
+      curtain.grabbed.x += (px - curtain.grabbed.x) * 0.72;
+      curtain.grabbed.y += (py - curtain.grabbed.y) * 0.72;
+      curtain.grabbed.ox = curtain.grabbed.x - state.pointerVX * 0.34;
+      curtain.grabbed.oy = curtain.grabbed.y - state.pointerVY * 0.34;
+      curtain.collisionEnergy = 1;
+    }
+
+    for (let iteration = 0; iteration < 4; iteration++) {
+      for (let y = 0; y <= rows; y++) {
+        for (let x = 0; x <= cols; x++) {
+          if (x < cols) satisfy(point(curtain, x, y), point(curtain, x + 1, y), xRest, 0.72);
+          if (y < rows) satisfy(point(curtain, x, y), point(curtain, x, y + 1), yRest, 0.66);
+          if (x < cols && y < rows) satisfy(point(curtain, x, y), point(curtain, x + 1, y + 1), Math.hypot(xRest, yRest), 0.12);
+        }
+      }
+    }
+
+    curtain.points.forEach((p) => {
+      p.x = clamp(p.x, -w * 0.22, w * 1.22);
+      p.y = clamp(p.y, -20, h + 70);
     });
   }
 
   function drawCurtain(curtain, time) {
-    const { canvas, side, w, h } = curtain;
-    const ctx = canvas.getContext('2d');
+    const { ctx, cols, rows, w, h, side } = curtain;
     ctx.clearRect(0, 0, w, h);
-
-    const open = state.open;
-    const dragSign = state.dragX >= state.dragStartX ? 1 : -1;
-    const pullWave = state.pull * Math.sin(time * 3.2 + side * 0.9) + state.pullVelocity * 8;
-    const idle = Math.sin(time * 0.82 + side * 1.1) * 0.52 + Math.sin(time * 1.47) * 0.18;
-    const wind = (idle + state.pointerX * 0.38 + state.pointerY * 0.08 + pullWave * 1.2 + state.shock * 10) * (1 - open * 0.38);
-    const foldCount = 7.2 + state.pull * 1.8;
-    const topPinch = 0.26 + open * 0.34 + state.pull * 0.18;
-    const bottomSwing = wind * (28 + state.pull * 30);
-    const hemWave = 14 + state.shock * 130 + state.pull * 48;
-
-    const bg = ctx.createLinearGradient(0, 0, w, h);
-    bg.addColorStop(0, '#6d3429');
-    bg.addColorStop(0.42, '#351512');
-    bg.addColorStop(0.78, '#130706');
-    bg.addColorStop(1, '#080303');
-    ctx.fillStyle = bg;
+    const base = ctx.createLinearGradient(0, 0, w, h);
+    base.addColorStop(0, '#74372c');
+    base.addColorStop(0.44, '#381512');
+    base.addColorStop(1, '#070202');
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, w, h);
 
-    const strips = 76;
-    for (let i = 0; i < strips; i++) {
-      const n0 = i / strips;
-      const n1 = (i + 1) / strips;
-      const x0 = n0 * w;
-      const x1 = n1 * w;
-      const mid = (n0 + n1) * 0.5;
-      const fold = Math.sin(mid * Math.PI * foldCount + time * 0.38 * side + wind * 0.06);
-      const fold2 = Math.sin(mid * Math.PI * (foldCount * 2.15) - time * 0.22);
-      const depth = 0.5 + fold * 0.5;
-      const shade = 0.05 + depth * 0.50 + Math.max(0, fold2) * 0.10;
-      const topOffset = side * Math.sin(mid * Math.PI * foldCount) * topPinch * 22 + dragSign * state.pull * 26 * (1 - mid);
-      const bottomOffset = side * (fold * 24 + bottomSwing * (0.25 + mid * 0.8)) + dragSign * state.pull * 58 * Math.sin(mid * Math.PI);
-      const yBottom0 = h - hemWave * Math.sin(mid * Math.PI * 2.2 + time * 1.1 + side);
-      const yBottom1 = h - hemWave * Math.sin(n1 * Math.PI * 2.2 + time * 1.1 + side);
-
-      const grad = ctx.createLinearGradient(x0, 0, x1, 0);
-      grad.addColorStop(0, `rgba(${22 + shade * 112}, ${8 + shade * 56}, ${8 + shade * 44}, 1)`);
-      grad.addColorStop(0.46, `rgba(${82 + shade * 150}, ${36 + shade * 82}, ${29 + shade * 62}, 1)`);
-      grad.addColorStop(1, `rgba(${16 + shade * 72}, ${6 + shade * 36}, ${6 + shade * 32}, 1)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(x0 + topOffset * 0.4, 0);
-      ctx.bezierCurveTo(x0 + topOffset, h * 0.28, x0 + bottomOffset * 0.25, h * 0.72, x0 + bottomOffset, yBottom0);
-      ctx.lineTo(x1 + bottomOffset * 0.92, yBottom1);
-      ctx.bezierCurveTo(x1 + topOffset * 0.3, h * 0.72, x1 + topOffset * 0.82, h * 0.28, x1 + topOffset * 0.35, 0);
-      ctx.closePath();
-      ctx.fill();
-
-      if (depth > 0.7) {
-        ctx.globalAlpha = (depth - 0.66) * 0.42;
-        ctx.strokeStyle = '#f1c99c';
-        ctx.lineWidth = 1.1;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const p00 = point(curtain, x, y);
+        const p10 = point(curtain, x + 1, y);
+        const p11 = point(curtain, x + 1, y + 1);
+        const p01 = point(curtain, x, y + 1);
+        const u = (x + 0.5) / cols;
+        const v = (y + 0.5) / rows;
+        const wrinkle = Math.sin(u * Math.PI * 13 + (p00.x - p00.bx) * 0.045 + time * 0.35 * side);
+        const verticalTension = Math.hypot(p01.x - p00.x, p01.y - p00.y) / (h / rows);
+        const silk = 0.46 + wrinkle * 0.28 + Math.max(0, verticalTension - 1) * 0.30 + curtain.collisionEnergy * 0.18;
+        const r = Math.round(44 + silk * 112);
+        const g = Math.round(15 + silk * 58);
+        const b = Math.round(14 + silk * 46);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
         ctx.beginPath();
-        ctx.moveTo((x0 + x1) / 2 + topOffset * 0.5, 0);
-        ctx.bezierCurveTo((x0 + x1) / 2 + topOffset, h * 0.28, (x0 + x1) / 2 + bottomOffset * 0.28, h * 0.72, (x0 + x1) / 2 + bottomOffset, yBottom0);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
+        ctx.moveTo(p00.x, p00.y);
+        ctx.lineTo(p10.x, p10.y);
+        ctx.lineTo(p11.x, p11.y);
+        ctx.lineTo(p01.x, p01.y);
+        ctx.closePath();
+        ctx.fill();
+
+        if (x % 3 === 0) {
+          ctx.globalAlpha = 0.11 + Math.max(0, wrinkle) * 0.10;
+          ctx.strokeStyle = '#ffd1a0';
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo((p00.x + p01.x) * 0.5, (p00.y + p01.y) * 0.5);
+          ctx.lineTo((p10.x + p11.x) * 0.5, (p10.y + p11.y) * 0.5);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
       }
     }
 
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.16;
-    ctx.strokeStyle = '#e7b98e';
+    ctx.globalAlpha = 0.13 + curtain.collisionEnergy * 0.16;
+    ctx.strokeStyle = '#f3c398';
     ctx.lineWidth = 0.55;
-    for (let x = 0; x < w; x += 9) {
-      const sway = Math.sin(x * 0.018 + time * 0.65) * (4 + state.shock * 80);
+    for (let x = 0; x <= cols; x += 2) {
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.bezierCurveTo(x + sway, h * 0.3, x - sway * 0.45, h * 0.68, x + sway * 0.25, h);
+      for (let y = 0; y <= rows; y++) {
+        const p = point(curtain, x, y);
+        if (y === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
       ctx.stroke();
     }
-    ctx.globalAlpha = 0.08;
-    for (let y = 12; y < h; y += 13) {
+    ctx.globalAlpha = 0.075;
+    for (let y = 2; y <= rows; y += 2) {
       ctx.beginPath();
-      ctx.moveTo(0, y + Math.sin(time + y * 0.04) * 1.5);
-      ctx.lineTo(w, y + Math.cos(time + y * 0.035) * 1.5);
+      for (let x = 0; x <= cols; x++) {
+        const p = point(curtain, x, y);
+        if (x === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
       ctx.stroke();
     }
     ctx.restore();
 
-    const hem = ctx.createLinearGradient(0, h - 58, 0, h);
-    hem.addColorStop(0, 'rgba(255,215,170,.05)');
-    hem.addColorStop(0.45, 'rgba(15,5,4,.18)');
-    hem.addColorStop(1, 'rgba(0,0,0,.46)');
-    ctx.fillStyle = hem;
-    ctx.fillRect(0, h - 62, w, 62);
-
-    ctx.globalAlpha = 0.34;
-    ctx.strokeStyle = 'rgba(255,217,178,.35)';
-    ctx.lineWidth = 1;
+    const bottom = ctx.createLinearGradient(0, h - 82, 0, h);
+    bottom.addColorStop(0, 'rgba(255,218,178,.02)');
+    bottom.addColorStop(0.45, 'rgba(20,7,5,.22)');
+    bottom.addColorStop(1, 'rgba(0,0,0,.58)');
+    ctx.fillStyle = bottom;
     ctx.beginPath();
-    for (let x = 0; x <= w; x += 18) {
-      const y = h - 50 + Math.sin(x * 0.025 + time * 1.2) * 4;
-      if (x === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    ctx.moveTo(0, h - 55);
+    for (let x = 0; x <= cols; x++) {
+      const p = point(curtain, x, rows);
+      ctx.lineTo(p.x, p.y - 4);
     }
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
 
     const vignette = ctx.createLinearGradient(side < 0 ? w : 0, 0, side < 0 ? 0 : w, 0);
-    vignette.addColorStop(0, 'rgba(0,0,0,.38)');
+    vignette.addColorStop(0, 'rgba(0,0,0,.42)');
     vignette.addColorStop(0.34, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,.48)');
+    vignette.addColorStop(1, 'rgba(0,0,0,.52)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
   }
 
   function animate(ms) {
     const time = ms * 0.001;
-    const stiffness = state.dragging ? 0.035 : 0.055;
-    const damping = state.dragging ? 0.88 : 0.82;
+    const stiffness = 0.055;
+    const damping = 0.82;
     const force = (state.target - state.open) * stiffness;
     state.velocity = (state.velocity + force) * damping;
     state.open = clamp(state.open + state.velocity);
     state.shock *= 0.92;
-    if (!state.dragging) {
-      state.pullVelocity += (0 - state.pull) * 0.052;
-      state.pullVelocity *= 0.82;
-      state.pull = Math.max(0, state.pull + state.pullVelocity);
-    } else {
-      state.pullVelocity *= 0.72;
-    }
+    state.pointerVX *= 0.82;
+    state.pointerVY *= 0.82;
+    state.pull *= 0.92;
 
     const idleDrift = Math.sin(time * 0.72) * 0.012 + Math.sin(time * 1.41) * 0.005;
-    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.08 + state.pull * 0.035);
+    const energy = Math.max(...curtains.map((curtain) => curtain.collisionEnergy), state.shock);
+    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.08);
     stage.style.setProperty('--curtain-open', physicalOpen.toFixed(4));
-    stage.style.setProperty('--curtain-sway', (idleDrift * 18 + state.velocity * 120 + state.pullVelocity * 180).toFixed(3));
-    stage.style.setProperty('--curtain-pull', state.pull.toFixed(4));
+    stage.style.setProperty('--curtain-sway', (idleDrift * 18 + state.velocity * 120 + energy * 12).toFixed(3));
+    stage.style.setProperty('--curtain-pull', Math.max(state.pull, energy).toFixed(4));
 
-    curtains.forEach((curtain) => drawCurtain(curtain, time));
+    curtains.forEach((curtain) => {
+      simulateCurtain(curtain, time);
+      drawCurtain(curtain, time);
+    });
+    window.__curtainPhysicsDebug = {
+      open: physicalOpen,
+      energy,
+      leftEnergy: curtains[0]?.collisionEnergy || 0,
+      rightEnergy: curtains[1]?.collisionEnergy || 0,
+      grabbed: curtains.some((curtain) => !!curtain.grabbed),
+      points: curtains.reduce((sum, curtain) => sum + curtain.points.length, 0)
+    };
     requestAnimationFrame(animate);
   }
 
