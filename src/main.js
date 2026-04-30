@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import './styles.css';
 
 const app = document.querySelector('#app');
@@ -156,6 +157,10 @@ function initPillow() {
 
   const group = new THREE.Group();
   scene.add(group);
+  const generatedParts = [];
+  const modelRoot = new THREE.Group();
+  group.add(modelRoot);
+  let realPillow = null;
 
   const geometry = new THREE.BoxGeometry(4.1, 0.78, 2.22, 72, 22, 42);
   const pos = geometry.attributes.position;
@@ -208,6 +213,7 @@ function initPillow() {
   const pillow = new THREE.Mesh(geometry, material);
   pillow.rotation.x = -0.08;
   group.add(pillow);
+  generatedParts.push(pillow);
 
   const seamMat = new THREE.LineBasicMaterial({ color: 0xd6d6de, transparent: true, opacity: 0.34 });
   for (const z of [-1.13, 1.13]) {
@@ -219,6 +225,7 @@ function initPillow() {
     ]);
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(90)), seamMat);
     group.add(line);
+    generatedParts.push(line);
   }
 
   const shadow = new THREE.Mesh(
@@ -229,6 +236,25 @@ function initPillow() {
   shadow.position.y = -0.72;
   shadow.scale.z = 0.36;
   group.add(shadow);
+
+  const loader = new GLTFLoader();
+  loader.load(`${import.meta.env.BASE_URL}models/biosleep-pillow.glb`, (gltf) => {
+    const model = gltf.scene;
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxSide = Math.max(size.x, size.y, size.z) || 1;
+    model.position.sub(center);
+    model.scale.setScalar(5.05 / maxSide);
+    model.rotation.x = -0.08;
+    modelRoot.add(model);
+    generatedParts.forEach((part) => { part.visible = false; });
+    realPillow = modelRoot;
+    window.__pillowModelDebug = { loaded: true, source: 'models/biosleep-pillow.glb', children: model.children.length, generatedFallbackVisible: false };
+  }, undefined, () => {
+    modelRoot.visible = false;
+    window.__pillowModelDebug = { loaded: false, source: 'models/biosleep-pillow.glb', generatedFallbackVisible: true };
+  });
 
   scene.add(new THREE.AmbientLight(0xffffff, 1.65));
   const key = new THREE.DirectionalLight(0xffffff, 2.35);
@@ -270,9 +296,10 @@ function initPillow() {
     group.rotation.y += (scrollRot + pointer.x * 0.08 - group.rotation.y) * 0.045;
     group.rotation.x += ((-0.10 + Math.sin(master * Math.PI) * 0.38 + corner * 0.58 - returnPhase * 0.36 - pointer.y * 0.035) - group.rotation.x) * 0.045;
     group.rotation.z += (((p - 0.5) * 0.08 - corner * 0.22 + returnPhase * 0.18) - group.rotation.z) * 0.04;
-    pillow.position.y = Math.sin(time * 0.9) * 0.028 + corner * 0.10 - final * 0.05;
-    pillow.position.x += ((corner * -0.32 + returnPhase * 0.16) - pillow.position.x) * 0.035;
-    pillow.scale.setScalar(1 + corner * 0.18 - returnPhase * 0.08);
+    const activePillow = realPillow || pillow;
+    activePillow.position.y = Math.sin(time * 0.9) * 0.028 + corner * 0.10 - final * 0.05;
+    activePillow.position.x += ((corner * -0.32 + returnPhase * 0.16) - activePillow.position.x) * 0.035;
+    activePillow.scale.setScalar(1 + corner * 0.18 - returnPhase * 0.08);
     material.roughness = 0.64 + Math.sin(time * 0.7 + master * 2) * 0.035 + corner * 0.05;
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
