@@ -4,6 +4,7 @@ import './styles.css';
 const app = document.querySelector('#app');
 
 app.innerHTML = `
+  <canvas id="grain" aria-hidden="true"></canvas>
   <header class="nav">
     <a class="brand" href="#top" aria-label="BioSleep Atelier 首页">
       <span class="brand-mark"></span>
@@ -11,17 +12,16 @@ app.innerHTML = `
     </a>
     <nav>
       <a href="#top">序幕</a>
-      <a href="#room">卧室</a>
-      <a href="#material">材料</a>
-      <a href="#order">预约</a>
+      <a href="#story-material">材料</a>
+      <a href="#story-order">预约</a>
     </nav>
   </header>
 
-  <section id="top" class="scrolly" aria-label="拉开窗帘进入卧室的滚动叙事">
+  <section id="top" class="scrolly" aria-label="生物基安睡枕完整滚动叙事">
     <div class="scrolly-stage">
       <div class="night-sky" aria-hidden="true"></div>
       <div class="room-light" aria-hidden="true"></div>
-      <div class="bedroom" id="room" aria-hidden="true">
+      <div class="bedroom" aria-hidden="true">
         <div class="window-frame"></div>
         <div class="wall-line"></div>
         <div class="side-table left"><span></span></div>
@@ -34,6 +34,43 @@ app.innerHTML = `
         </div>
       </div>
 
+      <div class="pillow-stage">
+        <canvas id="pillow-canvas" aria-label="滚动驱动旋转、放大与归位的 3D 生物基安睡枕"></canvas>
+        <div class="pillow-halo" aria-hidden="true"></div>
+      </div>
+
+      <div class="detail-loupe" aria-hidden="true">
+        <span>MAGNIFIED EDGE</span>
+        <b>织纹 / 压线 / 回弹边缘</b>
+      </div>
+
+      <div id="story-material" class="story-panel material-panel" aria-hidden="true">
+        <p class="eyebrow">MATERIAL QUIETLY WORKS</p>
+        <h2>看起来克制，<br/>里面每一层都在工作。</h2>
+        <div class="panel-grid">
+          <article><span>A</span><b>生物基亲肤层</b><p>可再生纤维触面，减少塑料感与闷热感。</p></article>
+          <article><span>B</span><b>低压承托芯</b><p>颈部、后脑与肩线受力被重新分配。</p></article>
+          <article><span>C</span><b>恒湿微气候</b><p>细微气流路径，温柔带走热量与湿气。</p></article>
+        </div>
+      </div>
+
+      <div class="story-panel spec-panel" aria-hidden="true">
+        <p class="eyebrow">OBJECT, NOT ORNAMENT</p>
+        <h2>它看起来很安静。<br/>只有躺下时，才开始表达。</h2>
+        <div class="spec-rail">
+          <div><b>38%</b><span>Bio-based surface yarn</span></div>
+          <div><b>7°</b><span>Neck angle relief zone</span></div>
+          <div><b>0.8s</b><span>Slow rebound recovery</span></div>
+        </div>
+      </div>
+
+      <div id="story-order" class="story-panel order-panel" aria-hidden="true">
+        <p class="eyebrow">REST, REFINED</p>
+        <h2>最后，把夜晚重新合上。</h2>
+        <p>窗帘归位，页面结束在安静里。下一版可接入真实产品摄影、购买链路和 glTF 高精模型。</p>
+        <a class="button primary light" href="mailto:hello@example.com">预约首批体验</a>
+      </div>
+
       <div class="curtain curtain-left" aria-hidden="true">
         <canvas class="curtain-canvas"></canvas>
         <div class="curtain-edge"></div>
@@ -44,91 +81,63 @@ app.innerHTML = `
       </div>
       <div class="curtain-rail" aria-hidden="true"></div>
 
-      <div class="pillow-stage">
-        <canvas id="pillow-canvas" aria-label="滚动驱动旋转的 3D 生物基安睡枕"></canvas>
-        <div class="pillow-halo" aria-hidden="true"></div>
-      </div>
-
       <div class="story-copy story-0 active" data-step="0">
         <p class="eyebrow">BIO-BASED SLEEP SYSTEM</p>
         <h1><span>先拉开夜色，</span><span>再进入睡眠。</span></h1>
-        <p>向下滚动。窗帘会被慢慢拉开，卧室光线进入，枕头在场景中央完成一次静默的展示。</p>
+        <p>滚动开启整段体验。即使不滚动，窗帘也会轻微飘动；移动鼠标或按住拖拽，会像真实丝绸一样被扰动。</p>
       </div>
       <div class="story-copy story-1" data-step="1">
-        <p class="eyebrow">CURTAIN / TEXTURE</p>
-        <h2>布料不是背景，<br/>是入睡前的第一层仪式。</h2>
-        <p>厚重窗帘以织物纹理、纵向褶皱和微光纱线展开，让页面像一段短片，而不是普通电商落地页。</p>
+        <p class="eyebrow">CURTAIN / PHYSICS</p>
+        <h2>布料被拉开，<br/>但不是机械移动。</h2>
+        <p>滚动只是意图，实际运动由弹簧、惯性、阻尼和鼠标扰动决定。</p>
       </div>
       <div class="story-copy story-2" data-step="2">
         <p class="eyebrow">OBJECT IN MOTION</p>
         <h2>枕头旋转，<br/>展示真实的体积与边缘。</h2>
-        <p>滚动驱动 3D 模型转场：从正面、侧面到俯视，看到柔和冠面、边缘压线与慢回弹的雕塑感。</p>
+        <p>从正面、侧面到俯视，看到柔和冠面、边缘压线与慢回弹的雕塑感。</p>
       </div>
       <div class="story-copy story-3" data-step="3">
-        <p class="eyebrow">ENTER THE ROOM</p>
-        <h2>最后，卧室出现。<br/>产品回到该在的位置。</h2>
-        <p>不是把枕头悬在虚空里，而是放回夜晚的系统：光、床品、温度、呼吸和身体的放松。</p>
+        <p class="eyebrow">CLOSE-UP</p>
+        <h2>放大一角，<br/>把触感推到画面三分之一。</h2>
+        <p>镜头不是切页，而是把枕头一角推到左侧 1/3，观看织纹、压线和边缘回弹。</p>
+      </div>
+      <div class="story-copy story-4" data-step="4">
+        <p class="eyebrow">RETURN</p>
+        <h2>再归位，<br/>产品回到卧室系统。</h2>
+        <p>它不是孤立的物件，而是夜晚里光、床品、温度和身体放松的交汇点。</p>
+      </div>
+      <div class="story-copy story-5" data-step="5">
+        <p class="eyebrow">LAYERS</p>
+        <h2>材料出现，<br/>但仍然保持克制。</h2>
+        <p>所有信息都在同一个滚动叙事里出现，不再跳到普通网页区块。</p>
+      </div>
+      <div class="story-copy story-6" data-step="6">
+        <p class="eyebrow">SPECIFICATION</p>
+        <h2>少量参数，<br/>只保留真正影响睡眠的部分。</h2>
+        <p>触感、承托、温度。其余噪音，都被拿掉。</p>
+      </div>
+      <div class="story-copy story-7" data-step="7">
+        <p class="eyebrow">CURTAIN CLOSES</p>
+        <h2>最后一屏，<br/>窗帘重新拉上。</h2>
+        <p>结束不是突然停止，而是像睡前一样，把房间慢慢安静下来。</p>
       </div>
 
       <div class="progress-label">
         <span id="progress-index">01</span>
         <i></i>
-        <span>SCROLL TO OPEN</span>
+        <span id="progress-text">SCROLL TO OPEN</span>
       </div>
-    </div>
-  </section>
-
-  <section id="material" class="section light material">
-    <div class="section-heading" data-reveal>
-      <p class="eyebrow dark">MATERIAL QUIETLY WORKS</p>
-      <h2>看起来克制，<br/>里面每一层都在工作。</h2>
-      <p>进入卧室之后，页面从电影感回到产品事实：触面、承托、微气候，三件事决定一整晚。</p>
-    </div>
-    <div class="material-grid">
-      <article class="material-card wide" data-reveal>
-        <div class="fiber-field" aria-hidden="true"></div>
-        <span class="num">A</span>
-        <h3>生物基亲肤层</h3>
-        <p>来自可再生来源的纤维触面，减少塑料感与闷热感，让第一秒接触更像干净的云。</p>
-      </article>
-      <article class="material-card" data-reveal>
-        <span class="num">B</span>
-        <h3>低压承托芯</h3>
-        <p>颈部、后脑与肩线受力被重新分配，睡姿变化时不需要反复寻找角度。</p>
-      </article>
-      <article class="material-card dark-card" data-reveal>
-        <span class="num">C</span>
-        <h3>恒湿微气候</h3>
-        <p>枕芯内部形成细微气流路径，夜间热量与湿气被温柔带走。</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="section product section-dark">
-    <div class="product-copy" data-reveal>
-      <p class="eyebrow">OBJECT, NOT ORNAMENT</p>
-      <h2>它看起来很安静。<br/>只有躺下时，才开始表达。</h2>
-      <p>我们保留真正影响睡眠的三件事：触感、承托、温度。其余噪音，都被拿掉。</p>
-    </div>
-    <div class="spec-rail" data-reveal>
-      <div><b>38%</b><span>Bio-based surface yarn</span></div>
-      <div><b>7°</b><span>Neck angle relief zone</span></div>
-      <div><b>0.8s</b><span>Slow rebound recovery</span></div>
-    </div>
-  </section>
-
-  <section id="order" class="section order section-dark">
-    <div data-reveal>
-      <p class="eyebrow">REST, REFINED</p>
-      <h2>让官网像产品一样，安静但难忘。</h2>
-      <p>下一步可以接入真实产品摄影、材质检测报告、购买链路和 glTF 高精模型。</p>
-      <a class="button primary light" href="mailto:hello@example.com">预约首批体验</a>
     </div>
   </section>
 `;
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
+}
+
+function smooth(value) {
+  const t = clamp(value);
+  return t * t * (3 - 2 * t);
 }
 
 function initPillow() {
@@ -228,8 +237,11 @@ function initPillow() {
   scene.add(rim);
 
   const pointer = { x: 0, y: 0 };
-  const scrollState = { p: 0 };
-  window.__setPillowScroll = (p) => { scrollState.p = p; };
+  const scrollState = { p: 0, pillow: 0, corner: 0, returnPhase: 0, final: 0 };
+  window.__setPillowScroll = (state) => {
+    if (typeof state === 'number') scrollState.pillow = state;
+    else Object.assign(scrollState, state);
+  };
 
   window.addEventListener('pointermove', (e) => {
     pointer.x = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -247,13 +259,19 @@ function initPillow() {
 
   function animate(t) {
     const time = t * 0.001;
-    const p = scrollState.p;
-    const scrollRot = p * Math.PI * 2.15 - 0.28;
+    const p = scrollState.pillow;
+    const master = scrollState.p || 0;
+    const corner = scrollState.corner || 0;
+    const returnPhase = scrollState.returnPhase || 0;
+    const final = scrollState.final || 0;
+    const scrollRot = p * Math.PI * 2.6 + corner * Math.PI * 0.85 - returnPhase * Math.PI * 0.5 - 0.28;
     group.rotation.y += (scrollRot + pointer.x * 0.08 - group.rotation.y) * 0.045;
-    group.rotation.x += ((-0.10 + Math.sin(p * Math.PI) * 0.42 - pointer.y * 0.035) - group.rotation.x) * 0.045;
-    group.rotation.z += ((p - 0.5) * 0.08 - group.rotation.z) * 0.04;
-    pillow.position.y = Math.sin(time * 0.9) * 0.028;
-    material.roughness = 0.68 + Math.sin(time * 0.7 + p * 2) * 0.035;
+    group.rotation.x += ((-0.10 + Math.sin(master * Math.PI) * 0.38 + corner * 0.58 - returnPhase * 0.36 - pointer.y * 0.035) - group.rotation.x) * 0.045;
+    group.rotation.z += (((p - 0.5) * 0.08 - corner * 0.22 + returnPhase * 0.18) - group.rotation.z) * 0.04;
+    pillow.position.y = Math.sin(time * 0.9) * 0.028 + corner * 0.10 - final * 0.05;
+    pillow.position.x += ((corner * -0.32 + returnPhase * 0.16) - pillow.position.x) * 0.035;
+    pillow.scale.setScalar(1 + corner * 0.18 - returnPhase * 0.08);
+    material.roughness = 0.64 + Math.sin(time * 0.7 + master * 2) * 0.035 + corner * 0.05;
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }
@@ -316,7 +334,12 @@ function initCurtainPhysics() {
     shock: 0,
     lastTarget: 0,
     pointerX: 0,
-    pointerY: 0
+    pointerY: 0,
+    pull: 0,
+    pullVelocity: 0,
+    dragging: false,
+    dragStartX: 0,
+    dragX: 0
   };
 
   window.__setCurtainOpen = (open) => {
@@ -329,7 +352,37 @@ function initCurtainPhysics() {
   window.addEventListener('pointermove', (event) => {
     state.pointerX = (event.clientX / window.innerWidth - 0.5) * 2;
     state.pointerY = (event.clientY / window.innerHeight - 0.5) * 2;
+    state.shock += 0.004 + Math.abs(event.movementX || 0) * 0.0009 + Math.abs(event.movementY || 0) * 0.00035;
+    if (state.dragging) {
+      state.dragX = event.clientX;
+      const dragDelta = (state.dragX - state.dragStartX) / Math.max(1, window.innerWidth);
+      state.pull = clamp(Math.abs(dragDelta) * 2.4, 0, 1.4);
+      state.pullVelocity += dragDelta * 0.012;
+      state.shock += Math.min(0.045, Math.abs(event.movementX || 0) * 0.0024);
+    }
   }, { passive: true });
+
+  stage.addEventListener('pointerdown', (event) => {
+    state.dragging = true;
+    state.dragStartX = event.clientX;
+    state.dragX = event.clientX;
+    state.shock += 0.16;
+    stage.classList.add('is-pulling');
+    try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
+  });
+
+  stage.addEventListener('pointerup', (event) => {
+    state.dragging = false;
+    state.pullVelocity += (state.dragX - state.dragStartX) / Math.max(1, window.innerWidth) * 0.08;
+    state.shock += Math.min(0.24, Math.abs(state.pullVelocity) * 1.8 + 0.08);
+    stage.classList.remove('is-pulling');
+    try { stage.releasePointerCapture?.(event.pointerId); } catch (_) {}
+  });
+
+  stage.addEventListener('pointercancel', () => {
+    state.dragging = false;
+    stage.classList.remove('is-pulling');
+  });
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -352,12 +405,14 @@ function initCurtainPhysics() {
     ctx.clearRect(0, 0, w, h);
 
     const open = state.open;
+    const dragSign = state.dragX >= state.dragStartX ? 1 : -1;
+    const pullWave = state.pull * Math.sin(time * 3.2 + side * 0.9) + state.pullVelocity * 8;
     const idle = Math.sin(time * 0.82 + side * 1.1) * 0.52 + Math.sin(time * 1.47) * 0.18;
-    const wind = (idle + state.pointerX * 0.18 + state.shock * 10) * (1 - open * 0.42);
-    const foldCount = 6.4;
-    const topPinch = 0.26 + open * 0.34;
-    const bottomSwing = wind * 24;
-    const hemWave = 14 + state.shock * 110;
+    const wind = (idle + state.pointerX * 0.38 + state.pointerY * 0.08 + pullWave * 1.2 + state.shock * 10) * (1 - open * 0.38);
+    const foldCount = 7.2 + state.pull * 1.8;
+    const topPinch = 0.26 + open * 0.34 + state.pull * 0.18;
+    const bottomSwing = wind * (28 + state.pull * 30);
+    const hemWave = 14 + state.shock * 130 + state.pull * 48;
 
     const bg = ctx.createLinearGradient(0, 0, w, h);
     bg.addColorStop(0, '#6d3429');
@@ -378,8 +433,8 @@ function initCurtainPhysics() {
       const fold2 = Math.sin(mid * Math.PI * (foldCount * 2.15) - time * 0.22);
       const depth = 0.5 + fold * 0.5;
       const shade = 0.05 + depth * 0.50 + Math.max(0, fold2) * 0.10;
-      const topOffset = side * Math.sin(mid * Math.PI * foldCount) * topPinch * 22;
-      const bottomOffset = side * (fold * 24 + bottomSwing * (0.25 + mid * 0.8));
+      const topOffset = side * Math.sin(mid * Math.PI * foldCount) * topPinch * 22 + dragSign * state.pull * 26 * (1 - mid);
+      const bottomOffset = side * (fold * 24 + bottomSwing * (0.25 + mid * 0.8)) + dragSign * state.pull * 58 * Math.sin(mid * Math.PI);
       const yBottom0 = h - hemWave * Math.sin(mid * Math.PI * 2.2 + time * 1.1 + side);
       const yBottom1 = h - hemWave * Math.sin(n1 * Math.PI * 2.2 + time * 1.1 + side);
 
@@ -458,17 +513,25 @@ function initCurtainPhysics() {
 
   function animate(ms) {
     const time = ms * 0.001;
-    const stiffness = 0.055;
-    const damping = 0.82;
+    const stiffness = state.dragging ? 0.035 : 0.055;
+    const damping = state.dragging ? 0.88 : 0.82;
     const force = (state.target - state.open) * stiffness;
     state.velocity = (state.velocity + force) * damping;
     state.open = clamp(state.open + state.velocity);
     state.shock *= 0.92;
+    if (!state.dragging) {
+      state.pullVelocity += (0 - state.pull) * 0.052;
+      state.pullVelocity *= 0.82;
+      state.pull = Math.max(0, state.pull + state.pullVelocity);
+    } else {
+      state.pullVelocity *= 0.72;
+    }
 
     const idleDrift = Math.sin(time * 0.72) * 0.012 + Math.sin(time * 1.41) * 0.005;
-    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.08);
+    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.08 + state.pull * 0.035);
     stage.style.setProperty('--curtain-open', physicalOpen.toFixed(4));
-    stage.style.setProperty('--curtain-sway', (idleDrift * 18 + state.velocity * 120).toFixed(3));
+    stage.style.setProperty('--curtain-sway', (idleDrift * 18 + state.velocity * 120 + state.pullVelocity * 180).toFixed(3));
+    stage.style.setProperty('--curtain-pull', state.pull.toFixed(4));
 
     curtains.forEach((curtain) => drawCurtain(curtain, time));
     requestAnimationFrame(animate);
@@ -484,26 +547,42 @@ function initScrollytelling() {
   const stage = document.querySelector('.scrolly-stage');
   const copies = [...document.querySelectorAll('.story-copy')];
   const index = document.querySelector('#progress-index');
+  const progressText = document.querySelector('#progress-text');
+  const labels = ['SCROLL TO OPEN', 'CURTAIN PHYSICS', 'PILLOW ROTATES', 'EDGE CLOSE-UP', 'RETURN TO ROOM', 'MATERIAL LAYERS', 'QUIET SPECS', 'CURTAIN CLOSED'];
 
   function update() {
     const rect = scrolly.getBoundingClientRect();
     const travel = Math.max(1, rect.height - window.innerHeight);
     const p = clamp(-rect.top / travel);
-    const open = clamp((p - 0.06) / 0.36);
-    const room = clamp((p - 0.34) / 0.34);
-    const pillow = clamp((p - 0.18) / 0.62);
-    const glow = clamp((p - 0.18) / 0.45);
+    const openIn = smooth((p - 0.03) / 0.16);
+    const closeOut = smooth((p - 0.86) / 0.13);
+    const open = clamp(openIn * (1 - closeOut));
+    const room = clamp(smooth((p - 0.12) / 0.18) * (1 - closeOut * 0.45));
+    const pillow = clamp(smooth((p - 0.18) / 0.18) * (1 - closeOut * 0.15));
+    const corner = smooth((p - 0.38) / 0.12) * (1 - smooth((p - 0.54) / 0.10));
+    const returnPhase = smooth((p - 0.54) / 0.12) * (1 - smooth((p - 0.70) / 0.10));
+    const materialPhase = smooth((p - 0.61) / 0.08) * (1 - smooth((p - 0.74) / 0.08));
+    const specPhase = smooth((p - 0.72) / 0.08) * (1 - smooth((p - 0.84) / 0.07));
+    const orderPhase = smooth((p - 0.84) / 0.08);
+    const glow = clamp(smooth((p - 0.15) / 0.28) * (1 - closeOut * 0.55));
 
     stage.style.setProperty('--open', open.toFixed(4));
     stage.style.setProperty('--room', room.toFixed(4));
     stage.style.setProperty('--pillow', pillow.toFixed(4));
+    stage.style.setProperty('--corner', corner.toFixed(4));
+    stage.style.setProperty('--return', returnPhase.toFixed(4));
+    stage.style.setProperty('--material-phase', materialPhase.toFixed(4));
+    stage.style.setProperty('--spec-phase', specPhase.toFixed(4));
+    stage.style.setProperty('--order-phase', orderPhase.toFixed(4));
+    stage.style.setProperty('--final', closeOut.toFixed(4));
     stage.style.setProperty('--glow', glow.toFixed(4));
-    window.__setPillowScroll?.(pillow);
+    window.__setPillowScroll?.({ p, pillow, corner, returnPhase, final: closeOut });
     window.__setCurtainOpen?.(open);
 
-    const step = Math.min(3, Math.floor(clamp(p * 4.12, 0, 3.999)));
+    const step = Math.min(7, Math.floor(clamp(p * 8.15, 0, 7.999)));
     copies.forEach((el, i) => el.classList.toggle('active', i === step));
-    index.textContent = `0${step + 1}`;
+    index.textContent = `${String(step + 1).padStart(2, '0')}`;
+    progressText.textContent = labels[step];
   }
 
   window.addEventListener('scroll', update, { passive: true });
