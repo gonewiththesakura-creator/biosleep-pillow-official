@@ -63,9 +63,9 @@ a { color: inherit; text-decoration: none; }
 
 .curtain-rail { position: absolute; left: 0; right: 0; top: 7.2%; height: 10px; background: linear-gradient(90deg, transparent, rgba(240,217,176,.18) 16%, rgba(224,205,170,.86) 50%, rgba(240,217,176,.18) 84%, transparent); box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 14; }
 .curtain-rail::after { content: ""; position: absolute; left: 8%; right: 8%; top: 9px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,239,205,.4), transparent); }
-.curtain { position: absolute; top: 0; bottom: -2.5vh; width: 58vw; z-index: 12; overflow: hidden; filter: drop-shadow(0 22px 42px rgba(0,0,0,.58)); will-change: transform; }
-.curtain-left { left: 0; transform: translateX(calc(var(--curtain-open, var(--open)) * -82%)) skewY(calc(var(--curtain-sway, 0) * .055deg)); transform-origin: 0 6%; }
-.curtain-right { right: 0; transform: translateX(calc(var(--curtain-open, var(--open)) * 82%)) skewY(calc(var(--curtain-sway, 0) * -.055deg)); transform-origin: 100% 6%; }
+.curtain { position: absolute; top: 0; bottom: -2.5vh; width: 68vw; z-index: 12; overflow: hidden; filter: drop-shadow(0 22px 42px rgba(0,0,0,.62)); will-change: transform; }
+.curtain-left { left: 0; transform: translateX(calc(var(--curtain-open, var(--open)) * -55%)) skewY(calc(var(--curtain-sway, 0) * .018deg)); transform-origin: 0 6%; }
+.curtain-right { right: 0; transform: translateX(calc(var(--curtain-open, var(--open)) * 55%)) skewY(calc(var(--curtain-sway, 0) * -.018deg)); transform-origin: 100% 6%; }
 .curtain-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .curtain-edge { position: absolute; top: 0; bottom: 0; width: 38px; opacity: .92; background: linear-gradient(90deg, rgba(255,212,160,.25), rgba(0,0,0,.45)); filter: blur(.2px); }
 .curtain-left .curtain-edge { right: 0; box-shadow: -18px 0 40px rgba(0,0,0,.35); }
@@ -152,7 +152,7 @@ h2 { margin-bottom: 24px; font-size: clamp(42px, 5.4vw, 86px); line-height: .97;
   h2 { font-size: clamp(38px, 11vw, 62px); }
   .pillow-stage { inset: 30% 4% 8%; }
   #pillow-canvas { width: 100%; height: 48vh; }
-  .curtain { width: 62vw; }
+  .curtain { width: 74vw; }
   .bed-scene { left: 8%; right: 8%; }
   .material-grid, .product, .spec-rail, .panel-grid { grid-template-columns: 1fr; }
   .story-panel { left: 28px; right: 28px; top: 55%; }

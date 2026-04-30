@@ -385,7 +385,7 @@ function initCurtainPhysics() {
 
   window.__setCurtainOpen = (open) => {
     const next = clamp(open);
-    state.shock += Math.min(0.07, Math.abs(next - state.lastTarget) * 0.14);
+    state.shock += Math.min(0.025, Math.abs(next - state.lastTarget) * 0.045);
     state.target = next;
     state.lastTarget = next;
   };
@@ -443,7 +443,7 @@ function initCurtainPhysics() {
     state.pointerVX = state.pointerX - state.prevPointerX;
     state.pointerVY = state.pointerY - state.prevPointerY;
     state.pointerActive = true;
-    state.shock += Math.min(0.045, Math.hypot(state.pointerVX, state.pointerVY) * 0.0008);
+    state.shock += Math.min(0.008, Math.hypot(state.pointerVX, state.pointerVY) * 0.00012);
   }
 
   function pointerToCloth(curtain) {
@@ -480,16 +480,16 @@ function initCurtainPhysics() {
         }
       });
     });
-    if (best && bestDistance < 0.24) {
+    if (best && bestDistance < 0.16) {
       best.curtain.grabbed = best.point;
-      state.pull = 1;
-      state.shock += 0.12;
+      state.pull = 0.22;
+      state.shock += 0.018;
     }
     try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
   });
   stage.addEventListener('pointerup', (event) => {
     state.dragging = false;
-    state.shock += 0.10;
+    state.shock += 0.012;
     state.pull = 0;
     curtains.forEach((curtain) => { curtain.grabbed = null; });
     stage.classList.remove('is-pulling');
@@ -518,24 +518,24 @@ function initCurtainPhysics() {
   function simulateCurtain(curtain, time) {
     const { cols, rows, clothW, clothH, side } = curtain;
     const local = pointerToCloth(curtain);
-    const speed = Math.min(42, Math.hypot(state.pointerVX, state.pointerVY));
-    const collisionRadius = state.dragging ? 0.24 : 0.17;
+    const speed = Math.min(26, Math.hypot(state.pointerVX, state.pointerVY));
+    const collisionRadius = state.dragging ? 0.10 : 0.040;
     const xRest = clothW / cols;
     const yRest = clothH / rows;
-    const wind = Math.sin(time * 0.75 + side) * 0.006 + Math.sin(time * 1.35) * 0.003 + state.velocity * 0.16 + state.shock * 0.035;
-    curtain.collisionEnergy *= 0.90;
+    const wind = Math.sin(time * 0.42 + side) * 0.0018 + Math.sin(time * 0.86) * 0.0010 + state.velocity * 0.045 + state.shock * 0.010;
+    curtain.collisionEnergy *= 0.82;
 
     for (let y = 0; y <= rows; y++) {
       for (let x = 0; x <= cols; x++) {
         const p = point(curtain, x, y);
         const u = x / cols;
         const v = y / rows;
-        const foldPhase = u * Math.PI * (8.2 + state.open * 1.1) + time * 0.18 * side;
-        const foldAmp = 0.060 * (1 - v * 0.28);
+        const foldPhase = u * Math.PI * (8.2 + state.open * 0.55) + time * 0.055 * side;
+        const foldAmp = 0.060 * (1 - v * 0.25);
         const gathered = side * state.open * clothW * (0.055 + 0.04 * Math.sin(u * Math.PI)) * (1 - v * 0.18);
         p.bx = (u - 0.5) * clothW + Math.sin(foldPhase) * foldAmp * side + gathered;
-        p.by = (0.5 - v) * clothH - Math.sin(u * Math.PI) * v * v * (0.045 + state.shock * 0.04);
-        p.bz = Math.cos(foldPhase) * (0.085 + state.open * 0.018) * (1 - v * 0.15);
+        p.by = (0.5 - v) * clothH - Math.sin(u * Math.PI) * v * v * (0.070 + state.shock * 0.010);
+        p.bz = Math.cos(foldPhase) * (0.075 + state.open * 0.010) * (1 - v * 0.15);
 
         if (p.pinned) {
           p.x += (p.bx - p.x) * 0.30;
@@ -545,13 +545,13 @@ function initCurtainPhysics() {
           continue;
         }
 
-        const vx = (p.x - p.ox) * 0.955;
-        const vy = (p.y - p.oy) * 0.955;
-        const vz = (p.z - p.oz) * 0.950;
+        const vx = (p.x - p.ox) * 0.825;
+        const vy = (p.y - p.oy) * 0.815;
+        const vz = (p.z - p.oz) * 0.800;
         p.ox = p.x; p.oy = p.y; p.oz = p.z;
-        p.x += vx + (p.bx - p.x) * (0.018 + v * 0.004) + side * wind * v;
-        p.y += vy + (p.by - p.y) * (0.012 + v * 0.004) - 0.0012;
-        p.z += vz + (p.bz - p.z) * 0.022 + wind * (0.9 + v * 0.5);
+        p.x += vx + (p.bx - p.x) * (0.010 + v * 0.002) + side * wind * v;
+        p.y += vy + (p.by - p.y) * (0.008 + v * 0.002) - 0.0018;
+        p.z += vz + (p.bz - p.z) * 0.014 + wind * (0.55 + v * 0.22);
 
         if (local.inside) {
           const dx = p.x - local.x;
@@ -561,10 +561,10 @@ function initCurtainPhysics() {
             const hit = (collisionRadius - d) / collisionRadius;
             const nx = dx / d;
             const ny = dy / d;
-            p.x += nx * hit * (0.014 + speed * 0.00028);
-            p.y += ny * hit * (0.010 + speed * 0.00020);
-            p.z += hit * (0.055 + speed * 0.00065);
-            curtain.collisionEnergy = Math.max(curtain.collisionEnergy, hit);
+            p.x += nx * hit * (0.0018 + speed * 0.000025);
+            p.y += ny * hit * (0.0014 + speed * 0.000020);
+            p.z += hit * (0.0045 + speed * 0.000055);
+            curtain.collisionEnergy = Math.max(curtain.collisionEnergy, hit * 0.15);
           }
         }
       }
@@ -572,19 +572,19 @@ function initCurtainPhysics() {
 
     if (curtain.grabbed && state.dragging) {
       const p = curtain.grabbed;
-      p.x += (local.x - p.x) * 0.30;
-      p.y += (local.y - p.y) * 0.30;
-      p.z += (0.145 - p.z) * 0.16;
-      p.ox = p.x - (state.pointerVX / Math.max(1, curtain.w)) * curtain.clothW * 0.10;
-      p.oy = p.y + (state.pointerVY / Math.max(1, curtain.h)) * curtain.clothH * 0.07;
-      curtain.collisionEnergy = 1;
+      p.x += (local.x - p.x) * 0.070;
+      p.y += (local.y - p.y) * 0.060;
+      p.z += (0.045 - p.z) * 0.055;
+      p.ox = p.x - (state.pointerVX / Math.max(1, curtain.w)) * curtain.clothW * 0.018;
+      p.oy = p.y + (state.pointerVY / Math.max(1, curtain.h)) * curtain.clothH * 0.014;
+      curtain.collisionEnergy = Math.max(curtain.collisionEnergy, 0.12);
     }
 
-    for (let iteration = 0; iteration < 5; iteration++) {
+    for (let iteration = 0; iteration < 7; iteration++) {
       for (let y = 0; y <= rows; y++) {
         for (let x = 0; x <= cols; x++) {
-          if (x < cols) satisfy(point(curtain, x, y), point(curtain, x + 1, y), xRest, 0.58);
-          if (y < rows) satisfy(point(curtain, x, y), point(curtain, x, y + 1), yRest, 0.56);
+          if (x < cols) satisfy(point(curtain, x, y), point(curtain, x + 1, y), xRest, 0.66);
+          if (y < rows) satisfy(point(curtain, x, y), point(curtain, x, y + 1), yRest, 0.64);
           if (x < cols && y < rows) satisfy(point(curtain, x, y), point(curtain, x + 1, y + 1), Math.hypot(xRest, yRest), 0.08);
         }
       }
