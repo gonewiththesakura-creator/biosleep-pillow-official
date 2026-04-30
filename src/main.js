@@ -35,10 +35,12 @@ app.innerHTML = `
       </div>
 
       <div class="curtain curtain-left" aria-hidden="true">
-        <div class="curtain-weave"></div>
+        <canvas class="curtain-canvas"></canvas>
+        <div class="curtain-edge"></div>
       </div>
       <div class="curtain curtain-right" aria-hidden="true">
-        <div class="curtain-weave"></div>
+        <canvas class="curtain-canvas"></canvas>
+        <div class="curtain-edge"></div>
       </div>
       <div class="curtain-rail" aria-hidden="true"></div>
 
@@ -297,6 +299,186 @@ function initGrain() {
   requestAnimationFrame(draw);
 }
 
+function initCurtainPhysics() {
+  const stage = document.querySelector('.scrolly-stage');
+  const curtains = [...document.querySelectorAll('.curtain')].map((el) => ({
+    el,
+    canvas: el.querySelector('.curtain-canvas'),
+    side: el.classList.contains('curtain-left') ? -1 : 1,
+    w: 0,
+    h: 0
+  }));
+
+  const state = {
+    target: 0,
+    open: 0,
+    velocity: 0,
+    shock: 0,
+    lastTarget: 0,
+    pointerX: 0,
+    pointerY: 0
+  };
+
+  window.__setCurtainOpen = (open) => {
+    const next = clamp(open);
+    state.shock += Math.min(0.06, Math.abs(next - state.lastTarget) * 0.16);
+    state.target = next;
+    state.lastTarget = next;
+  };
+
+  window.addEventListener('pointermove', (event) => {
+    state.pointerX = (event.clientX / window.innerWidth - 0.5) * 2;
+    state.pointerY = (event.clientY / window.innerHeight - 0.5) * 2;
+  }, { passive: true });
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    curtains.forEach((curtain) => {
+      const rect = curtain.el.getBoundingClientRect();
+      curtain.w = Math.max(1, Math.round(rect.width));
+      curtain.h = Math.max(1, Math.round(rect.height));
+      curtain.canvas.width = Math.round(curtain.w * dpr);
+      curtain.canvas.height = Math.round(curtain.h * dpr);
+      curtain.canvas.style.width = `${curtain.w}px`;
+      curtain.canvas.style.height = `${curtain.h}px`;
+      const ctx = curtain.canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+  }
+
+  function drawCurtain(curtain, time) {
+    const { canvas, side, w, h } = curtain;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+
+    const open = state.open;
+    const idle = Math.sin(time * 0.82 + side * 1.1) * 0.52 + Math.sin(time * 1.47) * 0.18;
+    const wind = (idle + state.pointerX * 0.18 + state.shock * 10) * (1 - open * 0.42);
+    const foldCount = 6.4;
+    const topPinch = 0.26 + open * 0.34;
+    const bottomSwing = wind * 24;
+    const hemWave = 14 + state.shock * 110;
+
+    const bg = ctx.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, '#6d3429');
+    bg.addColorStop(0.42, '#351512');
+    bg.addColorStop(0.78, '#130706');
+    bg.addColorStop(1, '#080303');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    const strips = 76;
+    for (let i = 0; i < strips; i++) {
+      const n0 = i / strips;
+      const n1 = (i + 1) / strips;
+      const x0 = n0 * w;
+      const x1 = n1 * w;
+      const mid = (n0 + n1) * 0.5;
+      const fold = Math.sin(mid * Math.PI * foldCount + time * 0.38 * side + wind * 0.06);
+      const fold2 = Math.sin(mid * Math.PI * (foldCount * 2.15) - time * 0.22);
+      const depth = 0.5 + fold * 0.5;
+      const shade = 0.05 + depth * 0.50 + Math.max(0, fold2) * 0.10;
+      const topOffset = side * Math.sin(mid * Math.PI * foldCount) * topPinch * 22;
+      const bottomOffset = side * (fold * 24 + bottomSwing * (0.25 + mid * 0.8));
+      const yBottom0 = h - hemWave * Math.sin(mid * Math.PI * 2.2 + time * 1.1 + side);
+      const yBottom1 = h - hemWave * Math.sin(n1 * Math.PI * 2.2 + time * 1.1 + side);
+
+      const grad = ctx.createLinearGradient(x0, 0, x1, 0);
+      grad.addColorStop(0, `rgba(${22 + shade * 112}, ${8 + shade * 56}, ${8 + shade * 44}, 1)`);
+      grad.addColorStop(0.46, `rgba(${82 + shade * 150}, ${36 + shade * 82}, ${29 + shade * 62}, 1)`);
+      grad.addColorStop(1, `rgba(${16 + shade * 72}, ${6 + shade * 36}, ${6 + shade * 32}, 1)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(x0 + topOffset * 0.4, 0);
+      ctx.bezierCurveTo(x0 + topOffset, h * 0.28, x0 + bottomOffset * 0.25, h * 0.72, x0 + bottomOffset, yBottom0);
+      ctx.lineTo(x1 + bottomOffset * 0.92, yBottom1);
+      ctx.bezierCurveTo(x1 + topOffset * 0.3, h * 0.72, x1 + topOffset * 0.82, h * 0.28, x1 + topOffset * 0.35, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      if (depth > 0.7) {
+        ctx.globalAlpha = (depth - 0.66) * 0.42;
+        ctx.strokeStyle = '#f1c99c';
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo((x0 + x1) / 2 + topOffset * 0.5, 0);
+        ctx.bezierCurveTo((x0 + x1) / 2 + topOffset, h * 0.28, (x0 + x1) / 2 + bottomOffset * 0.28, h * 0.72, (x0 + x1) / 2 + bottomOffset, yBottom0);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = '#e7b98e';
+    ctx.lineWidth = 0.55;
+    for (let x = 0; x < w; x += 9) {
+      const sway = Math.sin(x * 0.018 + time * 0.65) * (4 + state.shock * 80);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.bezierCurveTo(x + sway, h * 0.3, x - sway * 0.45, h * 0.68, x + sway * 0.25, h);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.08;
+    for (let y = 12; y < h; y += 13) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + Math.sin(time + y * 0.04) * 1.5);
+      ctx.lineTo(w, y + Math.cos(time + y * 0.035) * 1.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const hem = ctx.createLinearGradient(0, h - 58, 0, h);
+    hem.addColorStop(0, 'rgba(255,215,170,.05)');
+    hem.addColorStop(0.45, 'rgba(15,5,4,.18)');
+    hem.addColorStop(1, 'rgba(0,0,0,.46)');
+    ctx.fillStyle = hem;
+    ctx.fillRect(0, h - 62, w, 62);
+
+    ctx.globalAlpha = 0.34;
+    ctx.strokeStyle = 'rgba(255,217,178,.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += 18) {
+      const y = h - 50 + Math.sin(x * 0.025 + time * 1.2) * 4;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    const vignette = ctx.createLinearGradient(side < 0 ? w : 0, 0, side < 0 ? 0 : w, 0);
+    vignette.addColorStop(0, 'rgba(0,0,0,.38)');
+    vignette.addColorStop(0.34, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,.48)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function animate(ms) {
+    const time = ms * 0.001;
+    const stiffness = 0.055;
+    const damping = 0.82;
+    const force = (state.target - state.open) * stiffness;
+    state.velocity = (state.velocity + force) * damping;
+    state.open = clamp(state.open + state.velocity);
+    state.shock *= 0.92;
+
+    const idleDrift = Math.sin(time * 0.72) * 0.012 + Math.sin(time * 1.41) * 0.005;
+    const physicalOpen = clamp(state.open + idleDrift * (1 - state.open) + state.shock * 0.08);
+    stage.style.setProperty('--curtain-open', physicalOpen.toFixed(4));
+    stage.style.setProperty('--curtain-sway', (idleDrift * 18 + state.velocity * 120).toFixed(3));
+
+    curtains.forEach((curtain) => drawCurtain(curtain, time));
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(animate);
+}
+
 function initScrollytelling() {
   const scrolly = document.querySelector('.scrolly');
   const stage = document.querySelector('.scrolly-stage');
@@ -317,6 +499,7 @@ function initScrollytelling() {
     stage.style.setProperty('--pillow', pillow.toFixed(4));
     stage.style.setProperty('--glow', glow.toFixed(4));
     window.__setPillowScroll?.(pillow);
+    window.__setCurtainOpen?.(open);
 
     const step = Math.min(3, Math.floor(clamp(p * 4.12, 0, 3.999)));
     copies.forEach((el, i) => el.classList.toggle('active', i === step));
@@ -339,5 +522,6 @@ function initReveal() {
 
 initPillow();
 initGrain();
+initCurtainPhysics();
 initScrollytelling();
 initReveal();
