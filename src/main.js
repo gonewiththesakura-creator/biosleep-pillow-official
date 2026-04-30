@@ -85,6 +85,10 @@ app.innerHTML = `
         <p class="eyebrow">BIOSLEEP PILLOW</p>
         <h1><span>睡眠，</span><span>可以更安静。</span></h1>
         <p>一只生物基安睡枕。用柔和支撑、亲肤触面和克制设计，把卧室重新变成休息本身。</p>
+        <div class="hero-actions">
+          <a href="#story-material">了解材料</a>
+          <a href="#story-order">预约体验</a>
+        </div>
       </div>
       <div class="story-copy story-1" data-step="1">
         <p class="eyebrow">A QUIET REVEAL</p>
@@ -126,6 +130,12 @@ app.innerHTML = `
         <span id="progress-index">01</span>
         <i></i>
         <span id="progress-text">SCROLL TO OPEN</span>
+      </div>
+
+      <div class="ambient-specs" aria-hidden="true">
+        <div><b>Bio-based</b><span>亲肤触面</span></div>
+        <div><b>Low pressure</b><span>颈部承托</span></div>
+        <div><b>0.8s rebound</b><span>慢回弹</span></div>
       </div>
     </div>
   </section>
