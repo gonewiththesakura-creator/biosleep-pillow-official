@@ -45,18 +45,18 @@ app.innerHTML = `
       </div>
 
       <div id="story-material" class="story-panel material-panel" aria-hidden="true">
-        <p class="eyebrow">MATERIAL, QUIETLY ENGINEERED</p>
-        <h2>没有多余装饰。<br/>只有更好的夜晚。</h2>
+        <p class="eyebrow">MATERIAL</p>
+        <h2>更少。更好睡。</h2>
         <div class="panel-grid">
-          <article><span>01</span><b>生物基触面</b><p>柔和、干净，贴近皮肤但不黏腻。</p></article>
-          <article><span>02</span><b>低压承托芯</b><p>让颈部和后脑自然落位。</p></article>
-          <article><span>03</span><b>恒湿微气候</b><p>把热量和潮气慢慢带走。</p></article>
+          <article><span>01</span><b>生物基触面</b></article>
+          <article><span>02</span><b>低压承托</b></article>
+          <article><span>03</span><b>恒湿微气候</b></article>
         </div>
       </div>
 
       <div class="story-panel spec-panel" aria-hidden="true">
-        <p class="eyebrow">DESIGNED TO DISAPPEAR</p>
-        <h2>看起来安静。<br/>睡下去，才感觉到它。</h2>
+        <p class="eyebrow">SPECS</p>
+        <h2>安静，但明确。</h2>
         <div class="spec-rail">
           <div><b>38%</b><span>bio-based surface yarn</span></div>
           <div><b>7°</b><span>neck relief geometry</span></div>
@@ -67,7 +67,6 @@ app.innerHTML = `
       <div id="story-order" class="story-panel order-panel" aria-hidden="true">
         <p class="eyebrow">REST, REFINED</p>
         <h2>把夜晚留给睡眠。</h2>
-        <p>一只枕头，一个更干净的卧室系统。克制、柔软、可持续。</p>
         <a class="button primary light" href="mailto:hello@example.com">预约首批体验</a>
       </div>
 
@@ -84,46 +83,39 @@ app.innerHTML = `
       <div class="story-copy story-0 active" data-step="0">
         <p class="eyebrow">BIOSLEEP PILLOW</p>
         <h1><span>睡眠，</span><span>可以更安静。</span></h1>
-        <p>一只生物基安睡枕。用柔和支撑、亲肤触面和克制设计，把卧室重新变成休息本身。</p>
+        <p>柔和支撑。安静入睡。</p>
         <div class="hero-actions">
           <a href="#story-material">了解材料</a>
           <a href="#story-order">预约体验</a>
         </div>
       </div>
       <div class="story-copy story-1" data-step="1">
-        <p class="eyebrow">A QUIET REVEAL</p>
-        <h2>缓慢打开。<br/>像一盏灯被调暗。</h2>
-        <p>窗帘只保留轻微回应。它不表演，只把注意力留给产品。</p>
+        <p class="eyebrow">REVEAL</p>
+        <h2>慢慢打开。</h2>
       </div>
       <div class="story-copy story-2" data-step="2">
-        <p class="eyebrow">SCULPTED FOR REST</p>
-        <h2>柔和的体积。<br/>清楚的支撑。</h2>
-        <p>弧面、边缘和慢回弹被放在同一束光里，像一件安静的日用品雕塑。</p>
+        <p class="eyebrow">SUPPORT</p>
+        <h2>柔和承托。</h2>
       </div>
       <div class="story-copy story-3" data-step="3">
         <p class="eyebrow">DETAIL</p>
-        <h2>靠近一点。<br/>触感变得可见。</h2>
-        <p>细密织纹、轻微压线和柔和边缘，让支撑看起来也足够安静。</p>
+        <h2>触感可见。</h2>
       </div>
       <div class="story-copy story-4" data-step="4">
-        <p class="eyebrow">ROOM SYSTEM</p>
-        <h2>回到房间。<br/>也回到身体。</h2>
-        <p>它不是一个孤立的物件，而是光线、温度、床品和身体之间的平衡点。</p>
+        <p class="eyebrow">ROOM</p>
+        <h2>回到安静。</h2>
       </div>
       <div class="story-copy story-5" data-step="5">
-        <p class="eyebrow">LAYERS</p>
-        <h2>少一点视觉噪音。<br/>多一点真实材料。</h2>
-        <p>材料信息不打断体验，只在需要的时候出现。</p>
+        <p class="eyebrow">MATERIAL</p>
+        <h2>真实材料。</h2>
       </div>
       <div class="story-copy story-6" data-step="6">
-        <p class="eyebrow">SPECIFICATION</p>
-        <h2>只留下关键参数。</h2>
-        <p>触感、承托、温度。其余噪音，都被拿掉。</p>
+        <p class="eyebrow">SPECS</p>
+        <h2>只留关键。</h2>
       </div>
       <div class="story-copy story-7" data-step="7">
-        <p class="eyebrow">NIGHT MODE</p>
-        <h2>最后，<br/>把夜晚合上。</h2>
-        <p>页面结束在安静里，就像睡前把最后一束光关掉。</p>
+        <p class="eyebrow">NIGHT</p>
+        <h2>合上夜晚。</h2>
       </div>
 
       <div class="progress-label">
@@ -676,7 +668,7 @@ function initScrollytelling() {
   const copies = [...document.querySelectorAll('.story-copy')];
   const index = document.querySelector('#progress-index');
   const progressText = document.querySelector('#progress-text');
-  const labels = ['SCROLL TO OPEN', 'CURTAIN PHYSICS', 'PILLOW ROTATES', 'EDGE CLOSE-UP', 'RETURN TO ROOM', 'MATERIAL LAYERS', 'QUIET SPECS', 'CURTAIN CLOSED'];
+  const labels = ['OPEN', 'REVEAL', 'SUPPORT', 'DETAIL', 'ROOM', 'MATERIAL', 'SPECS', 'NIGHT'];
 
   function update() {
     const rect = scrolly.getBoundingClientRect();
