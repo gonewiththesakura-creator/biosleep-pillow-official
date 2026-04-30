@@ -40,34 +40,34 @@ app.innerHTML = `
       </div>
 
       <div class="detail-loupe" aria-hidden="true">
-        <span>MAGNIFIED EDGE</span>
-        <b>织纹 / 压线 / 回弹边缘</b>
+        <span>SOFT EDGE DETAIL</span>
+        <b>一圈安静的支撑边界</b>
       </div>
 
       <div id="story-material" class="story-panel material-panel" aria-hidden="true">
-        <p class="eyebrow">MATERIAL QUIETLY WORKS</p>
-        <h2>看起来克制，<br/>里面每一层都在工作。</h2>
+        <p class="eyebrow">MATERIAL, QUIETLY ENGINEERED</p>
+        <h2>没有多余装饰。<br/>只有更好的夜晚。</h2>
         <div class="panel-grid">
-          <article><span>A</span><b>生物基亲肤层</b><p>可再生纤维触面，减少塑料感与闷热感。</p></article>
-          <article><span>B</span><b>低压承托芯</b><p>颈部、后脑与肩线受力被重新分配。</p></article>
-          <article><span>C</span><b>恒湿微气候</b><p>细微气流路径，温柔带走热量与湿气。</p></article>
+          <article><span>01</span><b>生物基触面</b><p>柔和、干净，贴近皮肤但不黏腻。</p></article>
+          <article><span>02</span><b>低压承托芯</b><p>让颈部和后脑自然落位。</p></article>
+          <article><span>03</span><b>恒湿微气候</b><p>把热量和潮气慢慢带走。</p></article>
         </div>
       </div>
 
       <div class="story-panel spec-panel" aria-hidden="true">
-        <p class="eyebrow">OBJECT, NOT ORNAMENT</p>
-        <h2>它看起来很安静。<br/>只有躺下时，才开始表达。</h2>
+        <p class="eyebrow">DESIGNED TO DISAPPEAR</p>
+        <h2>看起来安静。<br/>睡下去，才感觉到它。</h2>
         <div class="spec-rail">
-          <div><b>38%</b><span>Bio-based surface yarn</span></div>
-          <div><b>7°</b><span>Neck angle relief zone</span></div>
-          <div><b>0.8s</b><span>Slow rebound recovery</span></div>
+          <div><b>38%</b><span>bio-based surface yarn</span></div>
+          <div><b>7°</b><span>neck relief geometry</span></div>
+          <div><b>0.8s</b><span>slow rebound recovery</span></div>
         </div>
       </div>
 
       <div id="story-order" class="story-panel order-panel" aria-hidden="true">
         <p class="eyebrow">REST, REFINED</p>
-        <h2>最后，把夜晚重新合上。</h2>
-        <p>窗帘归位，页面结束在安静里。下一版可接入真实产品摄影、购买链路和 glTF 高精模型。</p>
+        <h2>把夜晚留给睡眠。</h2>
+        <p>一只枕头，一个更干净的卧室系统。克制、柔软、可持续。</p>
         <a class="button primary light" href="mailto:hello@example.com">预约首批体验</a>
       </div>
 
@@ -82,44 +82,44 @@ app.innerHTML = `
       <div class="curtain-rail" aria-hidden="true"></div>
 
       <div class="story-copy story-0 active" data-step="0">
-        <p class="eyebrow">BIO-BASED SLEEP SYSTEM</p>
-        <h1><span>先拉开夜色，</span><span>再进入睡眠。</span></h1>
-        <p>滚动开启整段体验。窗帘本身是一张实时布料网格：鼠标靠近会发生局部碰撞，按住拖拽会抓住布面节点并拉扯回弹。</p>
+        <p class="eyebrow">BIOSLEEP PILLOW</p>
+        <h1><span>睡眠，</span><span>可以更安静。</span></h1>
+        <p>一只生物基安睡枕。用柔和支撑、亲肤触面和克制设计，把卧室重新变成休息本身。</p>
       </div>
       <div class="story-copy story-1" data-step="1">
-        <p class="eyebrow">CURTAIN / PHYSICS</p>
-        <h2>布料被拉开，<br/>但不是机械移动。</h2>
-        <p>滚动只是开合意图；布面由固定顶点、弹簧约束、重力、碰撞半径和拖拽抓点共同计算。</p>
+        <p class="eyebrow">A QUIET REVEAL</p>
+        <h2>缓慢打开。<br/>像一盏灯被调暗。</h2>
+        <p>窗帘只保留轻微回应。它不表演，只把注意力留给产品。</p>
       </div>
       <div class="story-copy story-2" data-step="2">
-        <p class="eyebrow">OBJECT IN MOTION</p>
-        <h2>枕头旋转，<br/>展示真实的体积与边缘。</h2>
-        <p>从正面、侧面到俯视，看到柔和冠面、边缘压线与慢回弹的雕塑感。</p>
+        <p class="eyebrow">SCULPTED FOR REST</p>
+        <h2>柔和的体积。<br/>清楚的支撑。</h2>
+        <p>弧面、边缘和慢回弹被放在同一束光里，像一件安静的日用品雕塑。</p>
       </div>
       <div class="story-copy story-3" data-step="3">
-        <p class="eyebrow">CLOSE-UP</p>
-        <h2>放大一角，<br/>把触感推到画面三分之一。</h2>
-        <p>镜头不是切页，而是把枕头一角推到左侧 1/3，观看织纹、压线和边缘回弹。</p>
+        <p class="eyebrow">DETAIL</p>
+        <h2>靠近一点。<br/>触感变得可见。</h2>
+        <p>细密织纹、轻微压线和柔和边缘，让支撑看起来也足够安静。</p>
       </div>
       <div class="story-copy story-4" data-step="4">
-        <p class="eyebrow">RETURN</p>
-        <h2>再归位，<br/>产品回到卧室系统。</h2>
-        <p>它不是孤立的物件，而是夜晚里光、床品、温度和身体放松的交汇点。</p>
+        <p class="eyebrow">ROOM SYSTEM</p>
+        <h2>回到房间。<br/>也回到身体。</h2>
+        <p>它不是一个孤立的物件，而是光线、温度、床品和身体之间的平衡点。</p>
       </div>
       <div class="story-copy story-5" data-step="5">
         <p class="eyebrow">LAYERS</p>
-        <h2>材料出现，<br/>但仍然保持克制。</h2>
-        <p>所有信息都在同一个滚动叙事里出现，不再跳到普通网页区块。</p>
+        <h2>少一点视觉噪音。<br/>多一点真实材料。</h2>
+        <p>材料信息不打断体验，只在需要的时候出现。</p>
       </div>
       <div class="story-copy story-6" data-step="6">
         <p class="eyebrow">SPECIFICATION</p>
-        <h2>少量参数，<br/>只保留真正影响睡眠的部分。</h2>
+        <h2>只留下关键参数。</h2>
         <p>触感、承托、温度。其余噪音，都被拿掉。</p>
       </div>
       <div class="story-copy story-7" data-step="7">
-        <p class="eyebrow">CURTAIN CLOSES</p>
-        <h2>最后一屏，<br/>窗帘重新拉上。</h2>
-        <p>结束不是突然停止，而是像睡前一样，把房间慢慢安静下来。</p>
+        <p class="eyebrow">NIGHT MODE</p>
+        <h2>最后，<br/>把夜晚合上。</h2>
+        <p>页面结束在安静里，就像睡前把最后一束光关掉。</p>
       </div>
 
       <div class="progress-label">
@@ -173,10 +173,10 @@ function initPillow() {
   weaveCanvas.width = 256;
   weaveCanvas.height = 256;
   const weaveCtx = weaveCanvas.getContext('2d');
-  weaveCtx.fillStyle = '#f3eee4';
+  weaveCtx.fillStyle = '#f7f7f9';
   weaveCtx.fillRect(0, 0, 256, 256);
   for (let i = 0; i < 256; i += 5) {
-    weaveCtx.strokeStyle = i % 10 === 0 ? 'rgba(178,164,140,.20)' : 'rgba(255,255,255,.22)';
+    weaveCtx.strokeStyle = i % 10 === 0 ? 'rgba(174,174,184,.18)' : 'rgba(255,255,255,.26)';
     weaveCtx.beginPath();
     weaveCtx.moveTo(i, 0);
     weaveCtx.lineTo(i + Math.sin(i) * 2, 256);
@@ -192,11 +192,11 @@ function initPillow() {
   weaveTexture.repeat.set(4, 2);
 
   const material = new THREE.MeshPhysicalMaterial({
-    color: 0xfffbf1,
+    color: 0xf8f8fb,
     map: weaveTexture,
     bumpMap: weaveTexture,
     bumpScale: 0.035,
-    roughness: 0.66,
+    roughness: 0.72,
     metalness: 0.02,
     clearcoat: 0.18,
     clearcoatRoughness: 0.82,
@@ -207,7 +207,7 @@ function initPillow() {
   pillow.rotation.x = -0.08;
   group.add(pillow);
 
-  const seamMat = new THREE.LineBasicMaterial({ color: 0xd8d1c4, transparent: true, opacity: 0.42 });
+  const seamMat = new THREE.LineBasicMaterial({ color: 0xd6d6de, transparent: true, opacity: 0.34 });
   for (const z of [-1.13, 1.13]) {
     const curve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-1.95, 0.17, z),
@@ -336,25 +336,25 @@ function initCurtainPhysics() {
     const rows = 68;
     const geometry = new THREE.PlaneGeometry(2, 2, cols, rows);
     const material = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#4b1714'),
-      roughness: 0.42,
+      color: new THREE.Color('#171113'),
+      roughness: 0.55,
       metalness: 0.0,
-      reflectivity: 0.62,
-      sheen: 0.85,
-      sheenColor: new THREE.Color('#ffcaa1'),
-      sheenRoughness: 0.34,
-      clearcoat: 0.24,
-      clearcoatRoughness: 0.36,
+      reflectivity: 0.38,
+      sheen: 0.72,
+      sheenColor: new THREE.Color('#d2d2d7'),
+      sheenRoughness: 0.48,
+      clearcoat: 0.10,
+      clearcoatRoughness: 0.58,
       side: THREE.DoubleSide,
       vertexColors: true
     });
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    const ambient = new THREE.AmbientLight(0x5a241e, 1.65);
-    const key = new THREE.DirectionalLight(0xffd0a4, 3.4);
+    const ambient = new THREE.AmbientLight(0x171719, 1.45);
+    const key = new THREE.DirectionalLight(0xffffff, 2.25);
     key.position.set(side * -1.8, 1.2, 4.8);
-    const rim = new THREE.DirectionalLight(0xfff2dd, 1.15);
+    const rim = new THREE.DirectionalLight(0x9fb7d8, 0.82);
     rim.position.set(side * 2.5, -0.2, 3.5);
     scene.add(ambient, key, rim);
 
@@ -609,16 +609,16 @@ function initCurtainPhysics() {
         const satinBand = Math.pow(Math.max(0, Math.sin(u * Math.PI * 3.4 + p.z * 8 + 0.6)), 2.4);
         const verticalGlow = Math.pow(Math.max(0, Math.cos((u - 0.45 * side) * Math.PI * 2.2 + time * 0.10)), 5.0);
         const tension = Math.min(1, Math.abs(p.z - p.bz) * 4.5 + curtain.collisionEnergy * 0.12);
-        const shade = 0.34 + fold * 0.08 + satinBand * 0.22 + verticalGlow * 0.18 + tension * 0.10 - v * 0.10;
-        curtain.color.setRGB(0.18 + shade * 0.34, 0.045 + shade * 0.13, 0.040 + shade * 0.10);
+        const shade = 0.24 + fold * 0.035 + satinBand * 0.11 + verticalGlow * 0.08 + tension * 0.04 - v * 0.075;
+        curtain.color.setRGB(0.035 + shade * 0.19, 0.032 + shade * 0.17, 0.036 + shade * 0.18);
         color.setXYZ(i, curtain.color.r, curtain.color.g, curtain.color.b);
       }
     }
     position.needsUpdate = true;
     color.needsUpdate = true;
     geometry.computeVertexNormals();
-    curtain.material.roughness = 0.40 + Math.sin(time * 0.5) * 0.025 - curtain.collisionEnergy * 0.04;
-    curtain.material.sheenRoughness = 0.30 + curtain.collisionEnergy * 0.06;
+    curtain.material.roughness = 0.54 + Math.sin(time * 0.35) * 0.010 - curtain.collisionEnergy * 0.015;
+    curtain.material.sheenRoughness = 0.48 + curtain.collisionEnergy * 0.03;
     curtain.renderer.render(curtain.scene, curtain.camera);
   }
 
